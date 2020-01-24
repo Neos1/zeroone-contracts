@@ -1,0 +1,1 @@
+// TODO: here will be tests for UniqueNames library
