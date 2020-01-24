@@ -72,3 +72,5 @@ where
 If you want more details, you are welcome to look at contracts code (```./contracts/```) and tests (```./test```).
 
 If you have any suggestions to make it better, you are also welcome.
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
