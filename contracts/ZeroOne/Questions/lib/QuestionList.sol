@@ -50,7 +50,7 @@ library QuestionList {
         uint _id
     )
         internal
-        pure
+        view
         returns (bool valid)
     {
         return ((_self.list.length - 1) >= _id) ? true : false;
