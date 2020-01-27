@@ -43,7 +43,8 @@ library QuestionType {
         internal
         returns (bool changed)
     {
-        // TODO: implementation goes here
+        _self.active = _status;
+        return (_self.active == _status) ? true : false;
     }
 
     /**
