@@ -49,7 +49,6 @@ library GroupList {
         pure
         returns (bool valid)
     {
-        // TODO: implement this
-        return true;
+        return ((_self.list.length - 1) >= _id) ? true : false;
     }
 }
