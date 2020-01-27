@@ -23,6 +23,7 @@ library GroupType {
         internal
         returns (bool changed)
     {
-        // TODO: implementation goes here
+         _self.name = _name;
+        return true;
     }
 }
