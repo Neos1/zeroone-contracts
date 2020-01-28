@@ -25,7 +25,7 @@ contract('Questions', (accounts) => {
         it('should be successfully created', async () => {
             try {
                 const contract = await Questions.new({ from: deployFrom });
-                expect(contract).not(null);
+                assert.notEqual(contract, null);
             } catch (e) {
                 console.log(e.message);
             }
