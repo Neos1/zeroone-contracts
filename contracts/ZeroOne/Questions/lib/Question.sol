@@ -44,7 +44,7 @@ library QuestionType {
         returns (bool changed)
     {
         _self.active = _status;
-        return (_self.active == _status) ? true : false;
+        return (_self.active == _status);
     }
 
     /**
