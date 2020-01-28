@@ -32,7 +32,7 @@ contract('Questions', (accounts) => {
             
         });
     });
-
+    
     describe('addQuestion()', () => {
         it('should successfully add new question', async () => {
             await questions.addQuestion(question);
@@ -53,9 +53,7 @@ contract('Questions', (accounts) => {
                 }
             });
         });
-    });
 
-    describe('Questions failing test cases', () => {
         it('shoud fail on uploading two same questions', async () => {
             try {
                 const questionDuplicate = Object.create(question);
@@ -97,6 +95,15 @@ contract('Questions', (accounts) => {
                 assert.strictEqual(e.message, 'expected array value (arg="paramNames", coderType="array", value="")');
             }
         })
+    });
+
+    describe('getQuestion()', () => {
+
+        it('should get first question in list', async () => {
+            await questions.addQuestion(question);
+            const uploaded = await questions.getQuestion(0);
+            assert.strictEqual(uploaded.name, 'name');
+        });
 
         it('should fail on getting question with invalid id', async () => {
             try {
@@ -106,7 +113,6 @@ contract('Questions', (accounts) => {
                 assert.strictEqual(e.message, 'Returned error: VM Exception while processing transaction: revert Provided index is out of bounds')
             }
         })
-        
     })
 
     describe('setActiveStatus()', () => {
@@ -127,7 +133,7 @@ contract('Questions', (accounts) => {
     })
 
 
-    // TODO: write tests for other cases
+    // : write tests for other cases
     // * 1. test timeLimit out of bounds
     // * 2. test params mismatch
     // * 3. test non-unique names
