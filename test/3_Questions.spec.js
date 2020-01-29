@@ -63,7 +63,7 @@ contract('Questions', (accounts) => {
                 assert.strictEqual(e.message, getErrorMessage('Name must be unique'))
             }
             
-        })
+        });
 
         it('should fail on uploading question with incorrect target', async () => {
             try {
@@ -74,7 +74,7 @@ contract('Questions', (accounts) => {
                 assert.strictEqual(e.message, 'invalid address (arg="target", coderType="address", value="")')
             }
 
-        })
+        });
 
         it('should fail on uploading question with incorrect time limit', async () => {
             try {
@@ -84,7 +84,7 @@ contract('Questions', (accounts) => {
             } catch (e) {
                 assert.strictEqual(e.message, getErrorMessage('Invalid question'));
             }
-        })
+        });
 
         it('should fail on uploading question with incorrect params', async () => {
             try {
@@ -94,7 +94,7 @@ contract('Questions', (accounts) => {
             } catch (e) {
                 assert.strictEqual(e.message, 'expected array value (arg="paramNames", coderType="array", value="")');
             }
-        })
+        });
     });
 
     describe('getQuestion()', () => {
@@ -112,8 +112,8 @@ contract('Questions', (accounts) => {
             } catch (e) {
                 assert.strictEqual(e.message, 'Returned error: VM Exception while processing transaction: revert Provided index is out of bounds')
             }
-        })
-    })
+        });
+    });
 
     describe('setActiveStatus()', () => {
 
@@ -130,7 +130,7 @@ contract('Questions', (accounts) => {
             const uploaded = await questions.getQuestion(0);
             assert.strictEqual(uploaded.active, true);
         });
-    })
+    });
 
 
     // : write tests for other cases

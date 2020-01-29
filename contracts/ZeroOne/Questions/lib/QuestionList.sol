@@ -53,6 +53,6 @@ library QuestionList {
         view
         returns (bool valid)
     {
-        return ((_self.list.length - 1) >= _id) ? true : false;
+        return (_self.list.length - 1) >= _id;
     }
 }

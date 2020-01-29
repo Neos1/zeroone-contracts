@@ -110,7 +110,7 @@ contract('QuestionsWithGroups', (accounts) => {
             } catch(e) {
                 assert.strictEqual(e.message, getErrorMessage('Provided index is out of bounds'));
             }
-        })
+        });
     });
 
     
