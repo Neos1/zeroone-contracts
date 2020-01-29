@@ -1,4 +1,5 @@
 const Questions = artifacts.require('./Questions.sol');
+
 const getErrorMessage = require('./helpers/get-error-message');
 
 contract('Questions', (accounts) => {
@@ -23,19 +24,16 @@ contract('Questions', (accounts) => {
 
     describe('constructor()', () => {
         it('should be successfully created', async () => {
-            try {
-                const contract = await Questions.new({ from: deployFrom });
-                assert.notEqual(contract, null);
-            } catch (e) {
-                console.log(e.message);
-            }
-            
+            const contract = await Questions.new({ from: deployFrom });
+            contract.addQuestion(question);
+            const uploadedLength = await contract.getQuestionsAmount();
+            assert.strictEqual(uploadedLength.toNumber(), 1);
         });
     });
     
     describe('addQuestion()', () => {
         it('should successfully add new question', async () => {
-            await questions.addQuestion(question);
+            const tx = await questions.addQuestion(question);
             const uploaded = await questions.getQuestion(0);
             Object.keys(question).forEach((key) => {
                 switch (typeof question[key]) {
@@ -52,31 +50,39 @@ contract('Questions', (accounts) => {
                         assert.strictEqual(question[key], uploaded[key]);
                 }
             });
+            const log = tx.logs.find(element => element.event.match('QuestionAdded'));
+            const {args: {id, name, methodSelector}} = log;
+            assert.strictEqual(id.toNumber(), 0);
+            assert.strictEqual(name, question.name);
+            assert.strictEqual(methodSelector, question.methodSelector);
         });
 
         it('shoud fail on uploading two same questions', async () => {
+            let error = false;
             try {
                 const questionDuplicate = Object.create(question);
                 await questions.addQuestion(question);
                 await questions.addQuestion(questionDuplicate);
             } catch (e) {
-                assert.strictEqual(e.message, getErrorMessage('Name must be unique'))
+                error = true;
             }
             
+            assert.strictEqual(error, true);
         });
 
         it('should fail on uploading question with incorrect target', async () => {
+            let error = false;
             try {
                 const questionWithIncorrectAddress = Object.create(question);
                 questionWithIncorrectAddress.target = '';
                 await questions.addQuestion(questionWithIncorrectAddress);
             } catch (e) {
-                assert.strictEqual(e.message, 'invalid address (arg="target", coderType="address", value="")')
+                error = true;
             }
-
+            assert.strictEqual(error, true);
         });
 
-        it('should fail on uploading question with incorrect time limit', async () => {
+        it('should fail on uploading question with lower time limit', async () => {
             try {
                 questionWithIncorrectTime = Object.create(question);
                 questionWithIncorrectTime.timeLimit = 1;
@@ -86,13 +92,24 @@ contract('Questions', (accounts) => {
             }
         });
 
+        it('should fail on uploading question with higher time limit', async () => {
+            try {
+                questionWithIncorrectTime = Object.create(question);
+                questionWithIncorrectTime.timeLimit = 8 * 60 * 60 * 24;
+                await questions.addQuestion(questionWithIncorrectTime);
+            } catch (e) {
+                assert.strictEqual(e.message, getErrorMessage('Invalid question'));
+            }
+        });
+
         it('should fail on uploading question with incorrect params', async () => {
             try {
                 const questionWithIncorrectParams = Object.create(question);
-                questionWithIncorrectParams.paramNames = '';
+                questionWithIncorrectParams.paramNames = ['name'];
+                questionWithIncorrectParams.paramTypes.push('address');
                 await questions.addQuestion(questionWithIncorrectParams);
             } catch (e) {
-                assert.strictEqual(e.message, 'expected array value (arg="paramNames", coderType="array", value="")');
+                assert.strictEqual(e.message, getErrorMessage('Invalid question'));
             }
         });
     });
@@ -106,12 +123,14 @@ contract('Questions', (accounts) => {
         });
 
         it('should fail on getting question with invalid id', async () => {
+            let error = false;
             try {
                 await questions.addQuestion(question);
                 await questions.getQuestion(1)
             } catch (e) {
-                assert.strictEqual(e.message, 'Returned error: VM Exception while processing transaction: revert Provided index is out of bounds')
+                error = true;
             }
+            assert.strictEqual(error, true);
         });
     });
 
@@ -131,13 +150,4 @@ contract('Questions', (accounts) => {
             assert.strictEqual(uploaded.active, true);
         });
     });
-
-
-    // : write tests for other cases
-    // * 1. test timeLimit out of bounds
-    // * 2. test params mismatch
-    // * 3. test non-unique names
-    // * 4. test getting question by invalid id
-    // * 5. test address(0) target
-    // * 6. test update activity status functionality
 });

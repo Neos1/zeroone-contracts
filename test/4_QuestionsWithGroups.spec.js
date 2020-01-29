@@ -1,4 +1,5 @@
 const QuestionsWithGroups = artifacts.require('./QuestionsWithGroups.sol');
+
 const getErrorMessage = require('./helpers/get-error-message');
 
 contract('QuestionsWithGroups', (accounts) => {
@@ -34,30 +35,12 @@ contract('QuestionsWithGroups', (accounts) => {
         });
     });
 
-    describe('addQuestion()', () => {
-        it('should add question', async () => {
-            await questionsWithGroups.addQuestion(question);
-            const uploaded = await questionsWithGroups.getQuestion(0);
-            assert.strictEqual(uploaded.name, 'question name');
-        });
-
-        it('shoud fail on uploading two same questions', async () => {
-            try {
-                const questionDuplicate = Object.create(question);
-                await questionsWithGroups.addQuestion(question);
-                await questionsWithGroups.addQuestion(questionDuplicate);
-            } catch (e) {
-                assert.strictEqual(e.message, getErrorMessage('Name must be unique'))
-            } 
-        });
-    });
-
     describe('getQuestionGroupsAmount()', () => {
         it('should successful check amount of groups', async () => {
             const group  = { name: 'something' };
             await questionsWithGroups.addQuestionGroup(group);
             const countOfUploaded = await questionsWithGroups.getQuestionGroupsAmount();
-            assert.equal(countOfUploaded, web3.utils.toBN(2));
+            assert.equal(countOfUploaded.toNumber(), 2);
         });
        
     });
@@ -69,19 +52,25 @@ contract('QuestionsWithGroups', (accounts) => {
         });
 
         it('should fail on getting group out of bounds', async () => {
+            let error = false;
             try {
                 await questionsWithGroups.getQuestionGroup(25);
             } catch (e) {
-                assert.equal(e.message, 'Returned error: VM Exception while processing transaction: revert Provided index is out of bounds');
+                error = true;
             }
+            assert.strictEqual(error, true)
         });
     });
 
     describe('addQuestionGroup()', () => {
         it('should successful add group', async () => {
-            await questionsWithGroups.addQuestionGroup(group);
+            const tx = await questionsWithGroups.addQuestionGroup(group);
             const uploadedGroup = await questionsWithGroups.getQuestionGroup(1);
             assert.strictEqual(uploadedGroup.name , 'group name');
+
+            const log = tx.logs.find(element => element.event.match('QuestionGroupAdded'));
+            const {args: {name}} = log;
+            assert.strictEqual(name, group.name);
         });
 
         it('should fail on non-unique name', async () => {
@@ -92,10 +81,20 @@ contract('QuestionsWithGroups', (accounts) => {
                 assert.strictEqual(e.message, getErrorMessage('Name must be unique'))
             }
         });
+
+        it('should upload question and group with same name', async () => {
+            const testGroup = Object.create(group);
+            testGroup.name = 'question name'
+            await questionsWithGroups.addQuestionGroup(testGroup);
+            await questionsWithGroups.addQuestion(question);
+            const uploadedQuestion = await questionsWithGroups.getQuestion(0);
+            const uploadedGroup = await questionsWithGroups.getQuestionGroup(1);
+            assert.strictEqual(uploadedQuestion.name, uploadedGroup.name)
+        })
     });
 
     describe('setQuestionGroupName()', () => {
-        it('should successful change group name', async () => {
+        it('should successfully change group name', async () => {
             name = 'test'
             await questionsWithGroups.addQuestionGroup(group);
             await questionsWithGroups.setQuestionGroupName(1, name);
@@ -103,7 +102,7 @@ contract('QuestionsWithGroups', (accounts) => {
             assert.strictEqual(uploadedGroup.name, name);
         });
 
-        it('should fail on change name of non-unique group', async ()=> {
+        it('should fail on change name of non-existing group', async ()=> {
             try {
                 name = 'test'
                 await questionsWithGroups.setQuestionGroupName(12, name);
@@ -117,9 +116,6 @@ contract('QuestionsWithGroups', (accounts) => {
 
 
     // TODO: write tests for other cases
-    // * 1. test non-unique names
-    // 2. test upload question and group with same names 
-    // 3. test group name update
     // after user groups, owner functionality are implemented
     // 4. test question upload from owners, non-owners, etc. 
 });
