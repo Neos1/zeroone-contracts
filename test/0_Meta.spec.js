@@ -1,6 +1,7 @@
+const MetaMock = artifacts.require('./MetaMock.sol');
+
 const { randomRange, randomInt } = require('./helpers/random');
 
-const MetaMock = artifacts.require('./MetaMock.sol');
 
 
 contract('Meta', (accounts) => {
