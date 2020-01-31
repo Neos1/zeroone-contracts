@@ -1,10 +1,12 @@
-const { randomInt } = require('./helpers/random');
-
 const SelectorMock = artifacts.require('./SelectorMock.sol');
+const QuestionsWithGroups = artifacts.require('./QuestionsWithGroups.sol');
+
+const { randomInt } = require('./helpers/random');
 
 contract('Selector', (accounts) => {
     let selectorMock;
     const deployFrom = accounts[0];
+
     const call = {
         name: 'method',
         type: 'function',
@@ -13,10 +15,40 @@ contract('Selector', (accounts) => {
             name: '_param1'
         }]
     };
-    const selector = web3.eth.abi.encodeFunctionSignature(call);
 
+    const getGroupCall = {
+        "inputs": [
+            {
+              "components": [
+                {
+                  "internalType": "string",
+                  "name": "name",
+                  "type": "string"
+                }
+              ],
+              "internalType": "struct GroupType.Group",
+              "name": "_questionGroup",
+              "type": "tuple"
+            }
+          ],
+          "name": "addQuestionGroup",
+          "outputs": [
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            }
+          ],
+          "stateMutability": "nonpayable",
+          "type": "function"
+    }
+
+    const selector = web3.eth.abi.encodeFunctionSignature(call);
+    const addGroupSelector = web3.eth.abi.encodeFunctionSignature(getGroupCall);
+    
     beforeEach(async () => {
         selectorMock = await SelectorMock.new({ from: deployFrom });
+        questionsWithGroups = await QuestionsWithGroups.new({from: deployFrom});
     });
 
     describe('addData()', () => {
@@ -30,8 +62,25 @@ contract('Selector', (accounts) => {
             }
         });
 
-        // TODO:
-        // 1. test makeCall() method
-        // 2. edge cases
-    })
+        it('should return method selector when data is empty', async () => {
+            for (let i = 1; i < 10; i++) {
+                const value = `0x`
+                const result = await selectorMock.testSelector(addGroupSelector, value)
+                assert.strictEqual(addGroupSelector, result);
+            }
+        });
+    });
+
+    describe('makeCall()', () => {
+        it('should successfully call method from contract', async () => {
+            for (let i = 1; i < 10; i++) {
+                const value = `test ${i}`
+                const {address} = questionsWithGroups;
+                const encodedValue = web3.eth.abi.encodeParameters(['tuple(string)'], [[value]]);
+                await selectorMock.testMakeCall(addGroupSelector, address, encodedValue);
+                const group = await questionsWithGroups.getQuestionGroup(i);
+                assert.strictEqual(value, group.name);
+            }
+        });
+    });
 });

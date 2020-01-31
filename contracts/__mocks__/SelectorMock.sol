@@ -26,4 +26,15 @@ contract SelectorMock {
     {
         data = _selector.addData(_data);
     }
+
+    function testMakeCall(
+        bytes4 _selector,
+        address _target,
+        bytes memory _data
+    )
+        public
+        returns (bool result, bytes memory response)
+    {   
+        (result, response) = _target.call(this.testSelector(_selector, _data));
+    }
 }
