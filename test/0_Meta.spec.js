@@ -2,13 +2,16 @@ const { randomRange, randomInt } = require('./helpers/random');
 
 const MetaMock = artifacts.require('./MetaMock.sol');
 
+
 contract('Meta', (accounts) => {
     let metaMock;
+    let questions;
     const deployFrom = accounts[0];
     const params = ['uint256', 'uint256', 'uint256'];
 
     beforeEach(async () => {
         metaMock = await MetaMock.new({ from: deployFrom });
+
     });
 
     describe('addMetadata()', () => {
@@ -24,7 +27,21 @@ contract('Meta', (accounts) => {
             }
         });
 
-        // TODO:
-        // 1. test case when provided function has no allocated place for meta
-    })
+        it('should fail when function has no allocated place for meta', async () => {
+            let error = false
+            const failingParams = ['uint256', 'uint256'];
+            const initial = (new Array(1)).fill(0);
+            try {
+                const value = randomInt(0, 100);
+                const replace = randomRange(0, 100, 2);
+                const base = web3.eth.abi.encodeParameters(failingParams, [...initial, value]);
+                const expected = web3.eth.abi.encodeParameters(params, [...replace, value]);
+                const result = await metaMock.testMeta(base, ...replace);
+                assert.strictEqual(result, expected);
+            } catch (e) {
+                error = true;
+            };
+            assert.strictEqual(error, true);
+        });
+    });
 });
