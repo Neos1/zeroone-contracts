@@ -1,6 +1,6 @@
 pragma solidity 0.6.1;
 
-import "./Group.sol";
+import "./UserGroup.sol";
 import "./../../../lib/UniqueNames.sol";
 
 /**
@@ -9,11 +9,11 @@ import "./../../../lib/UniqueNames.sol";
  */
 
 library UserGroupsList {
-	using GroupType for GroupType.Group;
+	using UserGroup for UserGroup.Group;
 	using UniqueNames for UniqueNames.List;
 
 	struct List {
-		GroupType.Group[] list;
+		UserGroup.Group[] list;
 		UniqueNames.List names;
 	}
 
@@ -25,7 +25,7 @@ library UserGroupsList {
 	*/
 	function add(
 		List storage _self,
-		GroupType.Group memory _group
+		UserGroup.Group memory _group
 	)
 		internal
 		returns (uint id)

@@ -5,7 +5,7 @@ pragma solidity 0.6.1;
  * @title Group
  * @dev User group data type implementation
  */
-library GroupType {
+library UserGroup {
 	enum Type {ERC20, CUSTOM}
 
 	struct Group {

@@ -1,8 +1,8 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "./lib/GroupsList.sol";
-import "./lib/Group.sol";
+import "./lib/UserGroupsList.sol";
+import "./lib/UserGroup.sol";
 
 /**
  * @title groups
@@ -10,7 +10,7 @@ import "./lib/Group.sol";
  */
 contract UserGroups {
     using UserGroupsList for UserGroupsList.List;
-    using GroupType for GroupType.Group;
+    using UserGroup for UserGroup.Group;
 
     UserGroupsList.List groups;
 
@@ -47,7 +47,7 @@ contract UserGroups {
         public
         view
         groupExists(_id)
-        returns (GroupType.Group memory group)
+        returns (UserGroup.Group memory group)
     {
         return groups.list[_id];
     }
@@ -70,7 +70,7 @@ contract UserGroups {
      * @return id
      */
     function addGroup(
-        GroupType.Group memory _group
+        UserGroup.Group memory _group
     )
         public
         virtual
