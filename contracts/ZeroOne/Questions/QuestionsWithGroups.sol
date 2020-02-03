@@ -103,7 +103,7 @@ contract QuestionsWithGroups is Questions {
 
     /**
      * @notice adds new question to list
-     * @param _question  question
+     * @param _question question
      * @return id
      */
     function addQuestion(

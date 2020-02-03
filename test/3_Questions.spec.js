@@ -33,7 +33,7 @@ contract('Questions', (accounts) => {
     
     describe('addQuestion()', () => {
         it('should successfully add new question', async () => {
-            const tx = await questions.addQuestion(question);
+            await questions.addQuestion(question);
             const uploaded = await questions.getQuestion(0);
             Object.keys(question).forEach((key) => {
                 switch (typeof question[key]) {
@@ -50,11 +50,6 @@ contract('Questions', (accounts) => {
                         assert.strictEqual(question[key], uploaded[key]);
                 }
             });
-            const log = tx.logs.find(element => element.event.match('QuestionAdded'));
-            const {args: {id, name, methodSelector}} = log;
-            assert.strictEqual(id.toNumber(), 0);
-            assert.strictEqual(name, question.name);
-            assert.strictEqual(methodSelector, question.methodSelector);
         });
 
         it('shoud fail on uploading two same questions', async () => {
@@ -150,4 +145,15 @@ contract('Questions', (accounts) => {
             assert.strictEqual(uploaded.active, true);
         });
     });
+
+    describe('events', () => {
+        it('should fire event on successful question adding', async () => {
+            const tx = await questions.addQuestion(question);
+            const log = tx.logs.find(element => element.event.match('QuestionAdded'));
+            const {args: {id, name, methodSelector}} = log;
+            assert.strictEqual(id.toNumber(), 0);
+            assert.strictEqual(name, question.name);
+            assert.strictEqual(methodSelector, question.methodSelector);
+        })
+    })
 });

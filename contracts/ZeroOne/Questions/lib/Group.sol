@@ -24,6 +24,6 @@ library GroupType {
         returns (bool changed)
     {
          _self.name = _name;
-        return keccak256(abi.encodePacked(_self.name)) == keccak256(abi.encodePacked(_name));
+        return (keccak256(abi.encodePacked(_self.name)) == keccak256(abi.encodePacked(_name)));
     }
 }

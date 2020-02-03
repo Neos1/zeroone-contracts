@@ -39,7 +39,7 @@ contract('Meta', (accounts) => {
                 const expected = web3.eth.abi.encodeParameters(params, [...replace, value]);
                 const result = await metaMock.testMeta(base, ...replace);
                 assert.strictEqual(result, expected);
-            } catch (e) {
+            } catch {
                 error = true;
             };
             assert.strictEqual(error, true);

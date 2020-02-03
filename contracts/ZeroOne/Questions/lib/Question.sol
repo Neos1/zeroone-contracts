@@ -43,10 +43,10 @@ library QuestionType {
         internal
         returns (bool changed)
     {
-        return _self.active == _status
-            ? false
-            : _self.active = _status;
+        _self.active = _status;
+        return _self.active == _status;
     }
+
 
     /**
      * @notice validates question
