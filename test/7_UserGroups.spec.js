@@ -63,11 +63,19 @@ contract('UserGroups', (accounts) => {
       let error = false;
       try {
         await userGroups.getGroup(0);
-      } catch ({ message }) {
-        error = true
+      } catch {
+        error = true;
       } 
       assert.strictEqual(error, true);
     });
+  });
 
-  })
+  describe('events', () => {
+    it('should fire event when added new usergroup', async () => {
+      const tx = await userGroups.addGroup(group);
+      const log = tx.logs.find(element => element.event.match('UserGroupAdded'));
+      const {args: {name}} = log;
+      assert.strictEqual(name, group.name);
+    });
+  });
 })

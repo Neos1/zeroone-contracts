@@ -5,8 +5,8 @@ import "./lib/UserGroupsList.sol";
 import "./lib/UserGroup.sol";
 
 /**
- * @title groups
- * @dev stores groups
+ * @title UserGroups
+ * @dev stores usergroups
  */
 contract UserGroups {
     using UserGroupsList for UserGroupsList.List;
@@ -14,7 +14,7 @@ contract UserGroups {
 
     UserGroupsList.List groups;
 
-    event GroupAdded(
+    event UserGroupAdded(
         uint id,
         string name,
         address groupAddress
@@ -77,7 +77,7 @@ contract UserGroups {
         returns (uint id)
     {
         id = groups.add(_group);
-        emit GroupAdded(
+        emit UserGroupAdded(
             id,
             _group.name,
             _group.groupAddress
