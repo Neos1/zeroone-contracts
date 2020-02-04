@@ -43,8 +43,10 @@ library QuestionType {
         internal
         returns (bool changed)
     {
-        // TODO: implementation goes here
+        _self.active = _status;
+        return _self.active == _status;
     }
+
 
     /**
      * @notice validates question
@@ -62,7 +64,7 @@ library QuestionType {
             _question.timeLimit > MIN_LENGTH
             && _question.timeLimit <= MAX_LENGTH
             && _question.paramNames.length == _question.paramTypes.length
-            // TODO: add more validation (target is not zero address)
+            && _question.target != address(0)
         );
     }
 }

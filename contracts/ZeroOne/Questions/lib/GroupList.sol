@@ -46,10 +46,9 @@ library GroupList {
         uint _id
     )
         internal
-        pure
+        view
         returns (bool valid)
     {
-        // TODO: implement this
-        return true;
+        return _self.list.length > _id;
     }
 }

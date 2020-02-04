@@ -23,6 +23,7 @@ library GroupType {
         internal
         returns (bool changed)
     {
-        // TODO: implementation goes here
+         _self.name = _name;
+        return (keccak256(abi.encodePacked(_self.name)) == keccak256(abi.encodePacked(_name)));
     }
 }
