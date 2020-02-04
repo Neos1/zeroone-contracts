@@ -32,7 +32,6 @@ contract('ZeroOne', (accounts) => {
     beforeEach(async () => {
         zeroOne = await ZeroOne.new({ from: deployFrom });
         controlled = await Controlled.new(zeroOne.address, { from: deployFrom });
-        //console.log(controlledMethods);
     });
 
     describe('events', () => {

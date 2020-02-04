@@ -36,7 +36,7 @@ contract('QuestionsWithGroups', (accounts) => {
     });
 
     describe('getQuestionGroupsAmount()', () => {
-        it('should successful check amount of groups', async () => {
+        it('should successfully check amount of groups', async () => {
             const group  = { name: 'something' };
             await questionsWithGroups.addQuestionGroup(group);
             const countOfUploaded = await questionsWithGroups.getQuestionGroupsAmount();
@@ -46,7 +46,7 @@ contract('QuestionsWithGroups', (accounts) => {
     });
 
     describe('getQuestionGroup()', () => {
-        it('should successful get group "system"', async () => {
+        it('should successfully get group "system"', async () => {
             const group = await questionsWithGroups.getQuestionGroup(0);
             assert.equal(group.name, 'system');
         });
@@ -63,14 +63,10 @@ contract('QuestionsWithGroups', (accounts) => {
     });
 
     describe('addQuestionGroup()', () => {
-        it('should successful add group', async () => {
-            const tx = await questionsWithGroups.addQuestionGroup(group);
+        it('should successfully add group', async () => {
+            await questionsWithGroups.addQuestionGroup(group);
             const uploadedGroup = await questionsWithGroups.getQuestionGroup(1);
             assert.strictEqual(uploadedGroup.name , 'group name');
-
-            const log = tx.logs.find(element => element.event.match('QuestionGroupAdded'));
-            const {args: {name}} = log;
-            assert.strictEqual(name, group.name);
         });
 
         it('should fail on non-unique name', async () => {
@@ -112,10 +108,15 @@ contract('QuestionsWithGroups', (accounts) => {
         });
     });
 
-    
+    describe('events', () => {
+        it('should fire event on successful adding new group of questions', async () => {
+            const tx = await questionsWithGroups.addQuestionGroup(group);
+            const log = tx.logs.find(element => element.event.match('QuestionGroupAdded'));
+            const {args: {name}} = log;
+            assert.strictEqual(name, group.name);
+        })
+    })
 
-
-    // TODO: write tests for other cases
     // after user groups, owner functionality are implemented
     // 4. test question upload from owners, non-owners, etc. 
 });

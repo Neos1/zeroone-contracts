@@ -31,5 +31,18 @@ contract('Unique', (accounts) => {
       assert.strictEqual(error, true);
     })
   });
+  
+  describe('isUnique', () => {
+    it('should return true on unique name', async () => {
+      const result = await uniqueMock.testIsUnique('test');
+      assert.strictEqual(result, true);
+    });
+
+    it('should reurn false on non-unique name', async () => {
+      await uniqueMock.testAdd('test');
+      const result = await uniqueMock.testIsUnique('test');
+      assert.strictEqual(result, false);
+    });
+  });
 
 })

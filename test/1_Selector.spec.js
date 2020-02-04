@@ -82,5 +82,19 @@ contract('Selector', (accounts) => {
                 assert.strictEqual(value, group.name);
             }
         });
+
+        it('should fail on calling non-existent method selector', async () => {
+            try {
+                const nonExisting = '0x00000000';
+                const value = `test`;
+                const {address} = questionsWithGroups;
+                const encodedValue = web3.eth.abi.encodeParameters(['tuple(string)'], [[value]]);
+                await selectorMock.testMakeCall(nonExisting, address, encodedValue);
+                const events = await questionsWithGroups.getPastEvents('QuestionGroupAdded');
+                assert.strictEqual(events.length, 0);
+            } catch ({ message }) { 
+                console.log(message);
+            }
+        })
     });
 });
