@@ -62,6 +62,16 @@ contract CustomToken is Ownable {
    */
   function symbol() public view returns(string memory) { return _symbol; }
 
+
+  function balanceOf(
+    address _user
+  ) 
+    public 
+    view 
+    returns (uint256) 
+  {
+    return _balances[_user];
+  }
   /**
     @dev Sets new administrator in Ownable
     @param _newAdmin address of new administrator
@@ -73,6 +83,8 @@ contract CustomToken is Ownable {
     public
     returns (bool) 
   {
+    require(_newAdmin != address(0), "Address must be non-empty");
+    require(!isProjectAddress(_newAdmin), "Address used as project");
     transferOwnership(_newAdmin);
     return owner() == _newAdmin;
   }
@@ -85,7 +97,7 @@ contract CustomToken is Ownable {
     address _recipient, 
     uint256 _count
   )
-    internal 
+    public 
   {
     require(_balances[_sender] >= _count, "Value must be less or equal user balance");
 
@@ -97,7 +109,6 @@ contract CustomToken is Ownable {
 
     emit Transfer(_sender, _recipient, _count);
   }
-
 
   /**
     @dev Sets user token balances for projects
@@ -122,7 +133,7 @@ contract CustomToken is Ownable {
     address _from,  
     uint256 _count
   ) 
-    internal
+    public
     onlyOwner()
     returns (bool) 
   {
@@ -144,7 +155,7 @@ contract CustomToken is Ownable {
     address _to,  
     uint256 _count
   ) 
-    internal
+    public
     onlyOwner() 
     returns (bool)
   {
@@ -159,6 +170,30 @@ contract CustomToken is Ownable {
     return true;
   }
 
+
+  function addToProjects(
+    address _project
+  ) 
+    public
+    returns (bool)
+  {
+    // TODO
+    // add check for address (address is project ?)
+    require(_project != address(0), "Address must be non-empty");
+    require(!isProjectAddress(_project), "Address already in list");
+    _projects.push(_project);
+    return true;
+  }
+
+  function getProjects() 
+    public
+    view 
+    returns(address[] memory) 
+  {
+    return _projects;
+  }
+
+
   function isProjectAddress(
     address _address
   ) 
@@ -166,10 +201,18 @@ contract CustomToken is Ownable {
     view 
     returns (bool isProject) 
   {
+    require(_address != address(0), "Address must be non-empty");
+
     isProject = false;
+    
     for (uint i = 0; i < _projects.length; i++) {
       address ballotAddress = _projects[i];
-      isProject = (ballotAddress == _address) ? true : false;
+      if (ballotAddress == _address) {
+       isProject = true; 
+       break;
+      } else {
+        isProject = false;
+      }
     }
   }
 
@@ -180,8 +223,8 @@ contract CustomToken is Ownable {
   )
     internal
   {
+    require(_project != address(0), "Address must be non-empty");
     require(isProjectAddress(_project), "Address is not in project list");
-
     _setBallotBalance(msg.sender, _balances[msg.sender]);
   }
 
