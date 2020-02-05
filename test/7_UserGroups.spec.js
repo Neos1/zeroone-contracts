@@ -15,12 +15,18 @@ contract('UserGroups', (accounts) => {
     userGroups = await UserGroups.new({ from })
   })
 
-  describe('addGroup()', () => {
-    it('should successfully add new user group', async () => {
+  describe('constructor()', () => {
+    it('should successfully created', async () => {
+      userGroups = await UserGroups.new({ from });
       let length = await userGroups.getUserGroupsAmount();
       assert.strictEqual(length.toNumber(), 0);
-      await userGroups.addGroup(group);
-      const {name, groupAddress, groupType} = await userGroups.getGroup(0);
+    });
+  });
+
+  describe('addGroup()', () => {
+    it('should successfully add new user group', async () => {
+      await userGroups.addUserGroup(group);
+      const {name, groupAddress, groupType} = await userGroups.getUserGroup(0);
       assert.strictEqual(name, group.name)
       assert.strictEqual(groupAddress, group.groupAddress)
       assert.strictEqual(Number(groupType), group.groupType)
@@ -28,11 +34,13 @@ contract('UserGroups', (accounts) => {
 
     it('should fail on adding user group with non-unique name', async () => {
       let error = false; 
+      await userGroups.addUserGroup(group);
+
       try {
-        await userGroups.addGroup(group);
-        await userGroups.addGroup(group);
-      } catch {
+        await userGroups.addUserGroup(group);
+      } catch ({message}) {
         error = true;
+        assert.strictEqual(message, getErrorMessage("Name must be unique"));
       }
       assert.strictEqual(error, true);
     });
@@ -42,8 +50,9 @@ contract('UserGroups', (accounts) => {
       try {
         const wrongGroup = Object.create(group);
         wrongGroup.groupAddress = '0x';
-        await userGroups.addGroup(wrongGroup);
-      } catch {
+        await userGroups.addUserGroup(wrongGroup);
+      } catch ({message}) {
+        assert.strictEqual(message, 'invalid address (arg="groupAddress", coderType="address", value="0x")');
         error = true;
       }
       assert.strictEqual(error, true);
@@ -52,8 +61,8 @@ contract('UserGroups', (accounts) => {
 
   describe('getGroup()', () => {
     it('should get userGroup from list', async () => {
-      await userGroups.addGroup(group);
-      const {name, groupAddress, groupType} = await userGroups.getGroup(0);
+      await userGroups.addUserGroup(group);
+      const {name, groupAddress, groupType} = await userGroups.getUserGroup(0);
       assert.strictEqual(name, group.name)
       assert.strictEqual(groupAddress, group.groupAddress)
       assert.strictEqual(Number(groupType), group.groupType)
@@ -62,7 +71,7 @@ contract('UserGroups', (accounts) => {
     it('should fail on getting non-existing group from list', async () => {
       let error = false;
       try {
-        await userGroups.getGroup(0);
+        await userGroups.getUserGroup(0);
       } catch {
         error = true;
       } 
@@ -72,10 +81,11 @@ contract('UserGroups', (accounts) => {
 
   describe('events', () => {
     it('should fire event when added new usergroup', async () => {
-      const tx = await userGroups.addGroup(group);
+      const tx = await userGroups.addUserGroup(group);
       const log = tx.logs.find(element => element.event.match('UserGroupAdded'));
       const {args: {name}} = log;
       assert.strictEqual(name, group.name);
     });
   });
-})
+
+});

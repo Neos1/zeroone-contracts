@@ -6,7 +6,7 @@ import "./lib/UserGroup.sol";
 
 /**
  * @title UserGroups
- * @dev stores usergroups
+ * @dev stores user groups
  */
 contract UserGroups {
   using UserGroupsList for UserGroupsList.List;
@@ -41,7 +41,7 @@ contract UserGroups {
    * @param _id group id
    * @return group
   */
-  function getGroup(
+  function getUserGroup(
     uint _id
   )
     public
@@ -69,11 +69,10 @@ contract UserGroups {
    * @param _group group
    * @return id
   */
-  function addGroup(
+  function addUserGroup(
     UserGroup.Group memory _group
   )
     public
-    virtual
     returns (uint id)
 {
     id = groups.add(_group);

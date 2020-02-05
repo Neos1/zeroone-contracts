@@ -27,6 +27,8 @@ library UserGroup {
     returns (bool valid)
   {
     return (
+      // TODO: 
+      // check that provided address is contract
       _group.groupAddress != address(0)
     );
   }

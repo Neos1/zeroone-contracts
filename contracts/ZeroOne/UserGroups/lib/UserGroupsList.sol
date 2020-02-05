@@ -55,5 +55,4 @@ library UserGroupsList {
   {
     return _self.list.length > _id;
   }
-  
 }
