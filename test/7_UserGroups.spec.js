@@ -1,6 +1,7 @@
 const UserGroups = artifacts.require('UserGroups.sol');
+const TokenMock = artifacts.require('TokenMock.sol');
 
-const getErrorMessage = require('./helpers/get-error-message');
+const { getErrorMessage, getShortErrorMessage } = require('./helpers/get-error-message');
 
 contract('UserGroups', (accounts) => {
   let userGroups;
@@ -78,6 +79,52 @@ contract('UserGroups', (accounts) => {
       assert.strictEqual(error, true);
     });
   });
+
+  describe('getTotalSupply()', () => {
+    it('should get totalSupply of Token', async() => {
+      const token = await TokenMock.new({from});
+      const {address} = token;
+      const group = {
+        name: 'test',
+        groupType: 0,
+        groupAddress: address
+      }
+      await userGroups.addUserGroup(group)
+      const balance = await userGroups.getTotalSupply(0)
+      assert.strictEqual(balance.toNumber(), 2000);
+    });
+  })
+
+  describe('getUserGroupAdmin', () => {
+    it('should return address of custom token owner', async () => {
+      const token = await TokenMock.new({from});
+      const {address} = token;
+      const group = {
+        name: 'test',
+        groupType: 1,
+        groupAddress: address
+      }
+      await userGroups.addUserGroup(group)
+      const admin = await userGroups.getUserGroupAdmin(0)
+      assert.strictEqual(admin, from);
+    });
+
+    it('should return error on getting token admin in non-custom tokens', async () => {
+      const token = await TokenMock.new({from});
+      const {address} = token;
+      const group = {
+        name: 'test',
+        groupType: 0,
+        groupAddress: address
+      }
+      await userGroups.addUserGroup(group)
+      try {
+        const admin = await userGroups.getUserGroupAdmin(0)
+      } catch({ message }) {
+        assert.strictEqual(message, getShortErrorMessage('This is not custom token group'));
+      }
+    });
+  })
 
   describe('events', () => {
     it('should fire event when added new usergroup', async () => {
