@@ -100,7 +100,7 @@ contract CustomToken is Ownable {
     address _recipient, 
     uint256 _count
   )
-    public 
+    internal 
   {
     require(_balances[_sender] >= _count, "Value must be less or equal user balance");
 
@@ -173,6 +173,7 @@ contract CustomToken is Ownable {
     require(_from != address(0), "Sender address must be not null");
     require(_to != address(0), "Recipient address must be not null");
     require(_balances[_from] >= _count, "Value must be less or equal user balance");
+    
     _transfer(_from, _to, _count);
     return true;
   }
