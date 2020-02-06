@@ -60,7 +60,12 @@ interface IERC20 {
      */
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 
-
+    /**
+     * @dev This is function for Custom tokens contracts,
+     * using for getting administrator of this tokens
+     *
+     * Returns a address of administrator
+     */
     function owner() external view returns (address);
 
     /**

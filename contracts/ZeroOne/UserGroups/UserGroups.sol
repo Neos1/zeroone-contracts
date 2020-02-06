@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "./lib/UserGroupsList.sol";
 import "./lib/UserGroup.sol";
-import "../../Interfaces/IERC20.sol";
 
 /**
  * @title UserGroups
@@ -51,41 +50,6 @@ contract UserGroups {
     returns (UserGroup.Group memory group)
   {
     return groups.list[_id];
-  }
-
-  /**
-    @notice get user group token totalSupply
-    @param _groupId group id
-    @return totalSupply
-   */
-  function getTotalSupply(uint _groupId)
-    public
-    view
-    groupExists(_groupId)
-    returns(uint256 totalSupply) 
-  {
-    UserGroup.Group memory userGroup = getUserGroup(_groupId);
-    IERC20 group = IERC20(userGroup.groupAddress);
-    totalSupply = group.totalSupply();
-  }
-
-  /**
-    @notice Get user group Admin
-    @param _groupId group id
-    @return admin
-   */
-  function getUserGroupAdmin(
-    uint _groupId
-  )
-    public
-    view
-    groupExists(_groupId)
-    returns(address admin)
-  {
-    UserGroup.Group memory userGroup = getUserGroup(_groupId);
-    require(userGroup.groupType == UserGroup.Type.CUSTOM, "This is not custom token group");
-    IERC20 group = IERC20(userGroup.groupAddress);
-    admin = group.owner();
   }
 
   /**

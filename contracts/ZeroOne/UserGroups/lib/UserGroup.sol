@@ -1,5 +1,6 @@
 pragma solidity 0.6.1;
 
+import "../IERC20.sol";
 
 /**
  * @title Group
@@ -12,6 +13,39 @@ library UserGroup {
     string name;
     address groupAddress;
     Type groupType;
+  }
+
+   /**
+    @notice get user group token totalSupply
+    @param _groupId group id
+    @return totalSupply
+   */
+  function getTotalSupply(
+    Group memory _group
+  )
+    public
+    view
+    returns(uint256 totalSupply) 
+  {
+    IERC20 group = IERC20(_group.groupAddress);
+    totalSupply = group.totalSupply();
+  }
+
+  /**
+    @notice get user group Admin
+    @param _groupId group id
+    @return admin
+   */
+  function getAdmin(
+    Group memory _group
+  )
+    public
+    view
+    returns(address admin)
+  {
+    require(_group.groupType == Type.CUSTOM, "This is not custom token group");
+    IERC20 group = IERC20(_group.groupAddress);
+    admin = group.owner();
   }
 
   /**
