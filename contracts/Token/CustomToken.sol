@@ -10,7 +10,7 @@ import "../lib/Ownable.sol";
 contract CustomToken is Ownable {
   mapping (address => uint256) private _balances;
 
-  mapping (address => mapping (address => uint256)) private _ballotBalances;
+  mapping (address => mapping (address => bool)) private _tokenLocks;
 
   uint256 private _totalSupply;
   
@@ -24,6 +24,8 @@ contract CustomToken is Ownable {
 
 
   event Transfer(address from, address to, uint256 count);
+
+  event TokenLocked (address project, address user);
 
   /**
     @dev Contrsuctor of tokens
@@ -72,6 +74,7 @@ contract CustomToken is Ownable {
   {
     return _balances[_user];
   }
+
   /**
     @dev Sets new administrator in Ownable
     @param _newAdmin address of new administrator
@@ -111,62 +114,66 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev Sets user token balances for projects
+    @dev Set lock status of user tokens in project
+    @return status
    */
-  function _setBallotBalance(
-    address _user,
-    uint256 _amount
+  function _lockTokens(
+    address _project,
+    address _user
   )
-    internal 
+    internal
+    returns (bool status) 
   {
-    for (uint i = 0; i < _projects.length; i++) {
-      address ballotAddress = _projects[i];
-      _ballotBalances[ballotAddress][_user] = _amount;
-    }
+      _tokenLocks[_project][_user] = true;
+      return _tokenLocks[_project][_user];
   }
 
+  /**
+    @dev Set unlock status of user tokens in project
+    @return status 
+  */
+  function _unlockTokens(
+    address _project,
+    address _user
+  )
+    internal
+    returns (bool status) 
+  {
+      _tokenLocks[_project][_user] = false;
+      return !_tokenLocks[_project][_user];
+  }
+
+  /**
+  @dev getter for status of user tokens lock in project
+  @return isLocked 
+  */
+  function isTokenLocked(
+    address _project,
+    address _user
+  )
+    public
+    view
+    returns (bool isLocked)
+  {
+    return _tokenLocks[_project][_user];
+  }
 
   /**
     @dev Transfer tokens from User to admin;
    */
-  function _transferToAdmin(
-    address _from,  
+  function transferFrom(
+    address _from,
+    address _to,  
     uint256 _count
   ) 
     public
     onlyOwner()
     returns (bool) 
   {
-    address _owner = owner();
-    require(_from != address(0), "Address must be not null");
+    require(_from != address(0), "Sender address must be not null");
+    require(_to != address(0), "Recipient address must be not null");
     require(_balances[_from] >= _count, "Value must be less or equal user balance");
-
-    _transfer(_from, _owner, _count);
-    _setBallotBalance(_from, _balances[_from]);
-    _setBallotBalance(_owner, _balances[_owner]);
-
-    return true;
-  }
-
-  /**
-    @dev Tranfer tokens from admin to User
-   */
-  function _transferToUser(
-    address _to,  
-    uint256 _count
-  ) 
-    public
-    onlyOwner() 
-    returns (bool)
-  {
-    address _owner = owner();
-    require(_to != address(0), "Address must be not null");
-    require(_balances[_owner] >= _count, "Value must be less or equal admin balance");
-
-    _transfer(_owner, _to, _count);
-    _setBallotBalance(_to, _balances[_to] );
-    _setBallotBalance(_owner, _balances[_owner] );
-
+    _transfer(_from, _to, _count);
     return true;
   }
 
@@ -177,14 +184,16 @@ contract CustomToken is Ownable {
     public
     returns (bool)
   {
-    // TODO
-    // add check for address (address is project ?)
     require(_project != address(0), "Address must be non-empty");
     require(!isProjectAddress(_project), "Address already in list");
     _projects.push(_project);
     return true;
   }
 
+  /**
+    @dev getting projects list
+    @return project list
+   */
   function getProjects() 
     public
     view 
@@ -193,7 +202,10 @@ contract CustomToken is Ownable {
     return _projects;
   }
 
-
+  /**
+    @dev check if address using as project
+    @return isProject
+   */
   function isProjectAddress(
     address _address
   ) 
@@ -204,7 +216,7 @@ contract CustomToken is Ownable {
     require(_address != address(0), "Address must be non-empty");
 
     isProject = false;
-    
+
     for (uint i = 0; i < _projects.length; i++) {
       address ballotAddress = _projects[i];
       if (ballotAddress == _address) {
@@ -216,34 +228,32 @@ contract CustomToken is Ownable {
     }
   }
 
-
-
-  function transferToVoting(
+  function sendVote(
     address _project
   )
-    internal
+    public
   {
     require(_project != address(0), "Address must be non-empty");
     require(isProjectAddress(_project), "Address is not in project list");
-    _setBallotBalance(msg.sender, _balances[msg.sender]);
+    _lockTokens(_project, msg.sender);
+    // TODO: implement sending descision in project
   }
-
 
 
   function returnFromVoting(
     address _project
   ) 
     public
-    view
     returns(bool)
   {
      require(isProjectAddress(_project), "Address is not in project list");
-     return isProjectAddress(_project);
+     _unlockTokens(_project, msg.sender);
+     return !isTokenLocked(_project, msg.sender);
   }
   
-  //TODO:
-  //implements this after making Ballot
+  // TODO:implements this after making Ballot
 
-  //Make transfer to voting after Ballot will be maked
-  //Make "returning" tokens from project
+  // add check for address (address is project ?)
+  // Make transfer to voting after Ballot will be maked
+  // Make "returning" tokens from project
 }

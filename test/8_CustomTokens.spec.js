@@ -5,13 +5,15 @@ const getErrorMessage = require('./helpers/get-error-message');
 
 contract('CustomToken', (accounts) => {
   let token;
-  const [from] = accounts;
+  let admin;
+  const [from, secondary] = accounts;
   const params = ['test', 'tst', 1000];
   const address = '0x68c0c7f9534e7b5fde6a4ca6b00b4ed5b958242a';
 
 
-  beforeEach(async () => {
+  beforeEach( async () => {
     token = await CustomToken.new( ...params, { from });
+    admin = await token.owner();
   });
 
   describe('constructor()', () => {
@@ -85,96 +87,126 @@ contract('CustomToken', (accounts) => {
     });
   });
   
-  describe('_transfer()',() => {
-    it('should transfer tokens beetween users', async () => {
-      const admin = await token.owner();
-      token._transfer(admin, address, 100);
-      const userBalance = await token.balanceOf(address);
-      assert.strictEqual(Number(userBalance), 100);
-    });
-
-    it('should fail on transfer from empty address', async () => {
-      try {
-        await token._transfer('0x', address, 100);
-      } catch ({ message }) {
-        assert.strictEqual(message, 'invalid address (arg="_sender", coderType="address", value="0x")');
-      }
-    });
-
-    it('should fail on transfer to empty address', async () => {
-      const admin = await token.owner();
-      try {
-        await token._transfer(admin, '0x', 100);
-      } catch ({ message }) {
-        assert.strictEqual(message, 'invalid address (arg="_recipient", coderType="address", value="0x")');
-      }
-    });
-  });
-
-  describe('transferToAdmin()',() => {
+  describe('transferFrom()',() => {
     it('should successfully transfer tokens to admin', async () => {
-      const admin = await token.owner();
-      await token._transfer(admin, address, 100);
-      await token._transferToAdmin(address, 50);
+      await token.transferFrom(admin, address, 100);
+      await token.transferFrom(address, admin, 50);
+
       const adminBalance = await token.balanceOf(admin);
       const userBalance = await token.balanceOf(address);
+
       assert.strictEqual(Number(userBalance), 50);
       assert.strictEqual(Number(adminBalance), 950);
     });
 
     it('should fail by calling transfer not from admin', async () => {
-      const admin = await token.owner();
-      await token._transfer(admin, address, 100);
+      await token.transferFrom(admin, address, 100);
       try {
         await token.setAdmin(address);
-        await token._transferToAdmin(address, 50);
+        await token.transferFrom(address, admin, 50);
       } catch ({ message }) {
         assert.strictEqual(message, getErrorMessage('Ownable: caller is not the owner'));
       }
     });
-  });
 
-  describe('transferToUser()',() => {
     it('should successfrully transfer tokens from admin to user', async () => {
-      await token._transferToUser(address, 50);
+      await token.transferFrom(admin, address, 50);
       const userBalance = await token.balanceOf(address);
       assert.strictEqual(Number(userBalance), 50);
     });
 
     it('should fail on transferring tokens to empty user', async () => {
       try {
-        await token._transferToUser('0x', 50);
+        await token.transferFrom(admin, '0x', 50);
       } catch ({ message }) {
         assert.strictEqual(message, 'invalid address (arg="_to", coderType="address", value="0x")')
       }
     });
 
     it('should fail on transferring tokens without admin privileges', async () => {
-      await token._transferToUser(address, 50);
+      await token.transferFrom(admin, address, 50);
       const userBalance = await token.balanceOf(address);
       assert.strictEqual(Number(userBalance), 50);
 
       await token.setAdmin(address);
+      const notAdmin = admin;
 
       try {
-        await token._transferToUser(address, 50, {from});
+        await token.transferFrom(notAdmin, address, 50);
       } catch ({ message }) {
         assert.strictEqual(message, getErrorMessage('Ownable: caller is not the owner'));
       }
     });
   });
 
-  describe('transferToVoting()',() => {
+  describe('sendVote()',() => {
+    it('should change balance for project, like user transfer tokens to voting', async () => {
+      try {
+        const projectAddress = '0x298e231fcf67b4aa9f41f902a5c5e05983e1d5f8'
+        await token.addToProjects(projectAddress);
+        await token.sendVote(projectAddress, {from: secondary});
+        const isTokensBlocked = await token.isTokenLocked(projectAddress, secondary);
+        assert.strictEqual(isTokensBlocked, true);
+      } catch ({message}) {
+        console.log(message);
+      }
+      
+    });
 
+    it('should fail on changing balance for project non-existing in list', async () => {
+      const projectAddress = '0x298e231fcf67b4aa9f41f902a5c5e05983e1d5f8'
+      await token.addToProjects(projectAddress);
+      try {
+        await token.sendVote(projectAddress);
+      } catch ({ message }) {
+        assert.strictEqual(message, getErrorMessage('Address is not in project list'));
+      }
+    });
   });
 
   describe('isProjectAddress()',() => {
+    it('should confirm that address is in projects list', async () => {
+      await token.addToProjects(address);
+      const isProject = await token.isProjectAddress(address);
+      assert.strictEqual(isProject, true);
+    });
 
+    it('should confirm that address is not in projects list', async () => {
+      const isProject = await token.isProjectAddress(address);
+      assert.strictEqual(isProject, false);
+    });
   });
 
-
   describe('events', () => {
+    it('should fire OwnershipTransferred event on admin changing', async () => {
+      const tx = await token.setAdmin(address);
+      const log = tx.logs.find(element => element.event.match('OwnershipTransferred'));
+      const {args: {previousOwner, newOwner}} = log;
+      assert.strictEqual(previousOwner.toUpperCase(), from.toUpperCase());
+      assert.strictEqual(newOwner.toUpperCase(), address.toUpperCase());
+    });
 
+    it('should fire Transfer event on "transferToUser()" call', async () => {
+  
+      const tx = await token.transferFrom(admin, address, 100);
+      const log = tx.logs.find(element => element.event.match('Transfer'));
+      const {args: {from: sender, to, count}} = log;
+      assert.strictEqual(sender.toUpperCase(), from.toUpperCase());      
+      assert.strictEqual(to.toUpperCase(), address.toUpperCase());      
+      assert.strictEqual(count.toNumber(), 100);
+    });
+
+    it('should fire Transfer event on "transferToAdmin()" call', async () => {
+
+      await token._transfer(admin, address, 100);
+
+      const tx = await token.transferFrom(address, admin, 100);
+      const log = tx.logs.find(element => element.event.match('Transfer'));
+      const {args: {from: sender, to, count}} = log;
+      assert.strictEqual(sender.toUpperCase(), address.toUpperCase());      
+      assert.strictEqual(to.toUpperCase(), from.toUpperCase());      
+      assert.strictEqual(count.toNumber(), 100);
+    });
   });
   
 });
