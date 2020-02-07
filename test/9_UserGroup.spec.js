@@ -4,7 +4,6 @@ const ERC20Mock = artifacts.require('./ERC20.sol');
 
 const { getShortErrorMessage } = require('./helpers/get-error-message');
 
-
 contract('UserGroupMock', (accounts) => {
   let userGroup;
   let token;
@@ -35,6 +34,7 @@ contract('UserGroupMock', (accounts) => {
     });
 
     it('should fail on getting admin of ERC20 group', async () => {
+      let error = false
       const ERC20 = Object.assign(group, {
         groupAddress : erc20.address,
         groupType: 0,
@@ -44,10 +44,11 @@ contract('UserGroupMock', (accounts) => {
       try {
         await userGroup.testGetAdmin();
       } catch ({ message }) {
+        error = true;
         assert.strictEqual(message, getShortErrorMessage('This is not custom token group'))
       }
+      assert.strictEqual(error, true)
     });
-
   });
 
   describe('getTotalSupply()', () => {
@@ -69,9 +70,10 @@ contract('UserGroupMock', (accounts) => {
       userGroup = await UserGroupMock.new(customGroup);
       const totalSupply = await userGroup.testGetTotalSupply();
       assert.strictEqual(totalSupply.toNumber(), 2000)
-    })
+    });
 
     it('should return error on non-token totalSupply call', async() => {
+      let error = false;
       const nonToken = Object.assign(group, {
         groupAddress : from,
         groupType: 0,
@@ -81,10 +83,11 @@ contract('UserGroupMock', (accounts) => {
       try{
         const totalSupply = await userGroup.testGetTotalSupply();
       } catch ({message}) {
+        error = true;
         assert.strictEqual(message, getShortErrorMessage('').trim())
       }
-    })
+      assert.strictEqual(error, true);
+    });
   });
 
 })
-

@@ -1,5 +1,3 @@
-
-
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
@@ -42,4 +40,3 @@ contract UserGroupMock {
     return group.getTotalSupply();
   } 
 }
-

@@ -110,6 +110,7 @@ contract('UserGroups', (accounts) => {
     });
 
     it('should return error on getting token admin in non-custom tokens', async () => {
+      let error = false;
       const token = await TokenMock.new({from});
       const {address} = token;
       const group = {
@@ -121,8 +122,10 @@ contract('UserGroups', (accounts) => {
       try {
         const admin = await userGroups.getUserGroupAdmin(0)
       } catch({ message }) {
+        error = true;
         assert.strictEqual(message, getShortErrorMessage('This is not custom token group'));
       }
+      assert.strictEqual(error, true);
     });
   })
 
