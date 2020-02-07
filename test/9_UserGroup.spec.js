@@ -90,4 +90,4 @@ contract('UserGroupMock', (accounts) => {
     });
   });
 
-})
+});
