@@ -50,10 +50,10 @@ contract('UserGroups', (accounts) => {
       let error = false; 
       try {
         const wrongGroup = Object.create(group);
-        wrongGroup.groupAddress = '0x';
+        wrongGroup.groupAddress = `0x${Array(40).fill(0).join('')}`;
         await userGroups.addUserGroup(wrongGroup);
       } catch ({message}) {
-        assert.strictEqual(message, 'invalid address (arg="groupAddress", coderType="address", value="0x")');
+        assert.strictEqual(message, getErrorMessage('Invalid group'));
         error = true;
       }
       assert.strictEqual(error, true);
