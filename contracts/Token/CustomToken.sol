@@ -172,6 +172,7 @@ contract CustomToken is Ownable {
     view
     returns (bool isLocked)
   {
+    require(isProjectAddress(_project), "Address is not in project list");
     return _tokenLocks[_project][_user];
   }
 

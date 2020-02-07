@@ -33,7 +33,7 @@ contract('CustomToken', (accounts) => {
     });
   });
 
-  describe('setAdmin()',() => {
+  describe('setAdmin()', () => {
     it('should change admin of tokens', async() => {
       await token.setAdmin(address);
       const owner = await token.owner();
@@ -87,7 +87,7 @@ contract('CustomToken', (accounts) => {
     });
   });
   
-  describe('transferFrom()',() => {
+  describe('transferFrom()', () => {
     it('should successfully transfer tokens to admin', async () => {
       await token.transferFrom(admin, address, 100);
       await token.transferFrom(address, admin, 50);
@@ -139,7 +139,7 @@ contract('CustomToken', (accounts) => {
     });
   });
 
-  describe('sendVote()',() => {
+  describe('sendVote()', () => {
     it('should change balance for project, like user transfer tokens to voting', async () => {
       try {
         const projectAddress = '0x298e231fcf67b4aa9f41f902a5c5e05983e1d5f8'
@@ -164,7 +164,28 @@ contract('CustomToken', (accounts) => {
     });
   });
 
-  describe('isProjectAddress()',() => {
+  describe('returnTokens()', () => {
+    it('should unlock tokens after call', async () => {
+      const projectAddress = '0x298e231fcf67b4aa9f41f902a5c5e05983e1d5f8'
+      await token.addToProjects(projectAddress);
+      await token.sendVote(projectAddress);
+      let isTokensBlocked = await token.isTokenLocked(projectAddress, admin);
+      assert.strictEqual(isTokensBlocked, true);
+      token.returnFromVoting(projectAddress);
+      isTokensBlocked = await token.isTokenLocked(projectAddress, admin);
+      assert.strictEqual(isTokensBlocked, false);
+    });
+
+    it('should fail after call returnTokens() for project not in list', async () => {
+      try {
+        await token.returnFromVoting(address);
+      } catch ({ message }) {
+        assert.strictEqual(message, getErrorMessage('Address is not in project list'));
+      }
+    });
+  })
+
+  describe('isProjectAddress()', () => {
     it('should confirm that address is in projects list', async () => {
       await token.addToProjects(address);
       const isProject = await token.isProjectAddress(address);
