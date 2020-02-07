@@ -197,16 +197,27 @@ contract('CustomToken', (accounts) => {
     });
 
     it('should fire Transfer event on "transferToAdmin()" call', async () => {
-
-      await token._transfer(admin, address, 100);
+      await token.transferFrom(admin, address, 100);
 
       const tx = await token.transferFrom(address, admin, 100);
       const log = tx.logs.find(element => element.event.match('Transfer'));
       const {args: {from: sender, to, count}} = log;
       assert.strictEqual(sender.toUpperCase(), address.toUpperCase());      
-      assert.strictEqual(to.toUpperCase(), from.toUpperCase());      
+      assert.strictEqual(to.toUpperCase(), admin.toUpperCase());      
       assert.strictEqual(count.toNumber(), 100);
     });
+
+    it('should fire TokenLocked event on "sendVote()" call', async () => {
+      await token.transferFrom(admin, secondary, 100);
+      await token.addToProjects(address);
+
+      const tx = await token.sendVote(address, {from: secondary});
+      const log = tx.logs.find(element => element.event.match('TokenLocked'));
+      const {args: {project, user}} = log;
+      assert.strictEqual(project.toUpperCase(), address.toUpperCase());      
+      assert.strictEqual(user.toUpperCase(), secondary.toUpperCase());      
+    });
+
   });
-  
+
 });

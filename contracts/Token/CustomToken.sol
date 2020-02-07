@@ -125,6 +125,8 @@ contract CustomToken is Ownable {
     returns (bool status) 
   {
       _tokenLocks[_project][_user] = true;
+      emit TokenLocked(_project, _user);
+
       return _tokenLocks[_project][_user];
   }
 
