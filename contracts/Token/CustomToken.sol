@@ -2,7 +2,6 @@ pragma solidity 0.6.1;
 
 import "../lib/Ownable.sol";
 
-
 /**
   @title CustomToken
   @dev Contract implements custom tokens for ZeroOne 
@@ -93,6 +92,22 @@ contract CustomToken is Ownable {
   }
 
   /**
+    @dev add ballot project to list
+    @param _project address of ballot project
+   */
+  function addToProjects(
+    address _project
+  ) 
+    public
+    returns (bool)
+  {
+    require(_project != address(0), "Address must be non-empty");
+    require(!isProjectAddress(_project), "Address already in list");
+    _projects.push(_project);
+    return true;
+  }
+
+  /**
     @dev Transfers tokens from _sender to _recipient
    */
   function _transfer(
@@ -180,19 +195,6 @@ contract CustomToken is Ownable {
     return true;
   }
 
-
-  function addToProjects(
-    address _project
-  ) 
-    public
-    returns (bool)
-  {
-    require(_project != address(0), "Address must be non-empty");
-    require(!isProjectAddress(_project), "Address already in list");
-    _projects.push(_project);
-    return true;
-  }
-
   /**
     @dev getting projects list
     @return project list
@@ -231,6 +233,10 @@ contract CustomToken is Ownable {
     }
   }
 
+  /**
+    @dev lock tokens of msg.sender and sending vote to ballot
+    @param _project address of ballot project
+   */
   function sendVote(
     address _project
   )
@@ -242,12 +248,16 @@ contract CustomToken is Ownable {
     // TODO: implement sending descision in project
   }
 
-
+  /**
+    @dev unlocks the tokens of msg.sender
+    @param _project address of project
+    @return isLocked
+  */
   function returnFromVoting(
     address _project
   ) 
     public
-    returns(bool)
+    returns(bool isLocked)
   {
      require(isProjectAddress(_project), "Address is not in project list");
      _unlockTokens(_project, msg.sender);
