@@ -7,7 +7,7 @@ import "./lib/UserGroup.sol";
 /**
  * @title UserGroups
  * @dev stores user groups
-*/
+ */
 contract UserGroups {
     using UserGroupsList for UserGroupsList.List;
     using UserGroup for UserGroup.Group;
@@ -23,7 +23,7 @@ contract UserGroups {
     /**
      * @notice reverts on non-existing group id
      * @param _id group id
-    */
+     */
     modifier groupExists(
         uint _id
     ) {
@@ -40,7 +40,7 @@ contract UserGroups {
      * @notice get group data
      * @param _id group id
      * @return group
-    */
+     */
     function getUserGroup(
         uint _id
     )
@@ -55,7 +55,7 @@ contract UserGroups {
     /**
      * @notice gets groups amount
      * @return length
-    */
+     */
     function getUserGroupsAmount()
         public
         view
@@ -65,10 +65,10 @@ contract UserGroups {
     }
 
     /**
-    * @notice adds new group to list
-    * @param _group group
-    * @return id
-    */
+     * @notice adds new group to list
+     * @param _group group
+     * @return id
+     */
     function addUserGroup(
         UserGroup.Group memory _group
     )

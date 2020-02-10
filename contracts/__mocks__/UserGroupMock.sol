@@ -4,8 +4,8 @@ pragma experimental ABIEncoderV2;
 import "../ZeroOne/UserGroups/lib/UserGroup.sol";
 
 /**
-  @title UserGroupMock
-  @dev mock for testing UserGroup lib
+ @title UserGroupMock
+ @dev mock for testing UserGroup lib
  */
 contract UserGroupMock {
     using UserGroup for UserGroup.Group;
@@ -17,9 +17,9 @@ contract UserGroupMock {
     }
 
     /**
-    @dev method for testing getAdmin() method of user group
-    @return admin
-    */
+     @dev method for testing getAdmin() method of user group
+     @return admin
+     */
     function testGetAdmin() 
         public
         view
@@ -29,9 +29,9 @@ contract UserGroupMock {
     } 
 
     /**
-    @dev method for testing getAdmin() method of user group
-    @return totalSupply
-    */
+     @dev method for testing getAdmin() method of user group
+     @return totalSupply
+     */
     function testGetTotalSupply() 
         public
         view
