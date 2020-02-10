@@ -7,9 +7,9 @@ pragma solidity 0.6.1;
 contract ERC20 {
 
     uint256 private _totalSupply;
-    
+      
     constructor(uint256 totalSupply) public {
-      _totalSupply = totalSupply;
+        _totalSupply = totalSupply;
     }
 
     /**
