@@ -1,8 +1,8 @@
 pragma solidity 0.6.1;
 
 /**
- @title TokenMock
- @dev mock for testing methods in UserGroups
+ * @title TokenMock
+ * @dev mock for testing methods in UserGroups
  */
 contract TokenMock {
     uint256 private _totalSupply;
@@ -18,14 +18,14 @@ contract TokenMock {
     }
 
     /**
-     @notice method for get TotalSupply of tokens
+     * @notice method for get TotalSupply of tokens
      */
     function totalSupply() public view returns(uint256) {
         return _totalSupply;
     }
     
     /**
-     @notice method for get admin of tokens
+     * @notice method for get admin of tokens
      */
     function owner() public view returns(address) {
         return _owner;
