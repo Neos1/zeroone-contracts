@@ -238,7 +238,5 @@ contract('CustomToken', (accounts) => {
       assert.strictEqual(project.toUpperCase(), address.toUpperCase());      
       assert.strictEqual(user.toUpperCase(), secondary.toUpperCase());      
     });
-
   });
-
 });

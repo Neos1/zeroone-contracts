@@ -3,8 +3,8 @@ pragma solidity 0.6.1;
 import "../lib/Ownable.sol";
 
 /**
-  @title CustomToken
-  @dev Contract implements custom tokens for ZeroOne 
+ * @title CustomToken
+ * @dev Contract implements custom tokens for ZeroOne 
  */
 contract CustomToken is Ownable {
   mapping (address => uint256) private _balances;
@@ -27,10 +27,10 @@ contract CustomToken is Ownable {
   event TokenLocked (address project, address user);
 
   /**
-    @dev Contrsuctor of tokens
-    @param name name of token
-    @param symbol short name of token
-    @param totalSupply count of tokens
+   * @dev Contrsuctor of tokens
+   * @param name name of token
+   * @param symbol short name of token
+   * @param totalSupply count of tokens
    */
   constructor(
     string memory name, 
@@ -46,38 +46,43 @@ contract CustomToken is Ownable {
 
 
   /**
-    @dev returns count of tokens
-    @return totalSupply
+   * @dev returns count of tokens
+   * @return totalSupply
    */
   function totalSupply() public view returns (uint256) { return _totalSupply; }
 
   /**
-    @dev returns count of tokens
-    @return name of token
+   * @dev returns count of tokens
+   * @return name of token
    */
   function name() public view returns(string memory) { return _name; }
 
   /**
-    @dev returns count of tokens
-    @return symbol of token
+   * @dev returns count of tokens
+   * @return symbol of token
    */
   function symbol() public view returns(string memory) { return _symbol; }
 
 
+  /**
+   * @dev method for getting current token balance of {_user}
+   * @param _user address of user
+   * @return balance
+   */
   function balanceOf(
     address _user
   ) 
     public 
     view 
-    returns (uint256) 
+    returns (uint256 balance) 
   {
     return _balances[_user];
   }
 
   /**
-    @dev Sets new administrator in Ownable
-    @param _newAdmin address of new administrator
-    @return is admin successfully changed 
+   * @dev Sets new administrator in Ownable
+   * @param _newAdmin address of new administrator
+   * @return is admin successfully changed 
    */
   function setAdmin(
     address _newAdmin
@@ -92,8 +97,8 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev add ballot project to list
-    @param _project address of ballot project
+   * @dev add ballot project to list
+   * @param _project address of ballot project
    */
   function addToProjects(
     address _project
@@ -108,7 +113,7 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev Transfers tokens from _sender to _recipient
+   * @dev Transfers tokens from _sender to _recipient
    */
   function _transfer(
     address _sender, 
@@ -129,8 +134,8 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev Set lock status of user tokens in project
-    @return status
+   * @dev Set lock status of user tokens in project
+   * @return status
    */
   function _lockTokens(
     address _project,
@@ -146,9 +151,9 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev Set unlock status of user tokens in project
-    @return status 
-  */
+   * @dev Set unlock status of user tokens in project
+   * @return status 
+   */
   function _unlockTokens(
     address _project,
     address _user
@@ -161,9 +166,9 @@ contract CustomToken is Ownable {
   }
 
   /**
-  @dev getter for status of user tokens lock in project
-  @return isLocked 
-  */
+   * @dev getter for status of user tokens lock in project
+   * @return isLocked 
+   */
   function isTokenLocked(
     address _project,
     address _user
@@ -197,8 +202,8 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev getting projects list
-    @return project list
+   * @dev getting projects list
+   * @return project list
    */
   function getProjects() 
     public
@@ -209,8 +214,8 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev check if address using as project
-    @return isProject
+   * @dev check if address using as project
+   * @return isProject
    */
   function isProjectAddress(
     address _address
@@ -235,8 +240,8 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev lock tokens of msg.sender and sending vote to ballot
-    @param _project address of ballot project
+   * @dev lock tokens of msg.sender and sending vote to ballot
+   * @param _project address of ballot project
    */
   function sendVote(
     address _project
@@ -250,10 +255,10 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev unlocks the tokens of msg.sender
-    @param _project address of project
-    @return isLocked
-  */
+   * @dev unlocks the tokens of msg.sender
+   * @param _project address of project
+   * @return isLocked
+   */
   function returnFromVoting(
     address _project
   ) 
