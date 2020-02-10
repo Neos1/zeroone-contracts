@@ -1,6 +1,6 @@
 const QuestionsWithGroups = artifacts.require('./QuestionsWithGroups.sol');
 
-const getErrorMessage = require('./helpers/get-error-message');
+const { getErrorMessage } = require('./helpers/get-error-message');
 
 contract('QuestionsWithGroups', (accounts) => {
     let questionsWithGroups;

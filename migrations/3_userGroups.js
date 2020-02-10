@@ -1,14 +1,14 @@
-const Questions = artifacts.require('QuestionsWithGroups.sol');
+const UserGroups = artifacts.require('UserGroups.sol');
 
 module.exports = async function(deployer, network, accounts) {
     const config = {
         from: accounts[0],
     };
-    return deployer.deploy(Questions, config)
+    return deployer.deploy(UserGroups, config)
         .then(() => {
             let output = new String();
             output += '---------------------------------------------------------------------------\n';
-            output += `| Questions                  | ${Questions.address} |\n`;
+            output += `| UserGroups                  | ${UserGroups.address} |\n`;
             output += '---------------------------------------------------------------------------';
             console.log(output);
         })

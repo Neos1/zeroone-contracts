@@ -4,7 +4,6 @@ pragma experimental ABIEncoderV2;
 import "../Controlled/Controlled.sol";
 import "../ZeroOne/IZeroOne.sol";
 
-
 /**
  * @title ControlledMock
  * @dev wrapper to test Controlled contract
