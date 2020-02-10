@@ -1,8 +1,8 @@
 pragma solidity 0.6.1;
 
 /**
-  @title TokenMock
-  @dev mock for testing methods in UserGroups
+ @title TokenMock
+ @dev mock for testing methods in UserGroups
  */
 contract TokenMock {
     uint256 private _totalSupply;
