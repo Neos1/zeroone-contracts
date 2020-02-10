@@ -1,6 +1,6 @@
 const Questions = artifacts.require('./Questions.sol');
 
-const getErrorMessage = require('./helpers/get-error-message');
+const { getErrorMessage } = require('./helpers/get-error-message');
 
 contract('Questions', (accounts) => {
     let questions;
