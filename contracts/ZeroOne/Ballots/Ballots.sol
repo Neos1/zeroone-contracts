@@ -38,6 +38,19 @@ contract Ballots {
     constructor() public {}
 
     /**
+     * @dev creates new Ballot in list
+     */
+    function startVoting(
+        BallotList.BallotSimple memory _votingPrimary
+    )
+        public
+        returns (bool)
+    {
+        ballots.add(_votingPrimary);
+        return true;
+    }
+
+    /**
      * @dev getting the voting by id
      */
     function getVoting(

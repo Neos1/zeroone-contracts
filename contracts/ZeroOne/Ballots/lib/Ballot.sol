@@ -13,7 +13,7 @@ library BallotType {
     struct Ballot {
         uint startTime;
         uint starterGroupId;
-        uint starterAddress;
+        address starterAddress;
         uint questionId;
         BallotStatus status;
         BallotResult result;
@@ -40,7 +40,7 @@ library BallotType {
         returns (
             uint startTime,
             uint starterGroupId,
-            uint starterAddress,
+            address starterAddress,
             uint questionId,
             BallotStatus status,
             BallotResult result,
