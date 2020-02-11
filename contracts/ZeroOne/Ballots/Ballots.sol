@@ -62,7 +62,7 @@ contract Ballots {
         returns (
             uint startTime,
             uint starterGroupId,
-            uint starterAddress,
+            address starterAddress,
             uint questionId,
             BallotType.BallotStatus status,
             BallotType.BallotResult result,
