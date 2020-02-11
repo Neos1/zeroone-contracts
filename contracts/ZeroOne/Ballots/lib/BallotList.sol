@@ -18,7 +18,7 @@ library BallotList {
      * @param _voting voting
      * @return id
      */
-    function addVoting(
+    function add(
         List storage _self,
         BallotType.Ballot memory _voting
     )
@@ -28,6 +28,7 @@ library BallotList {
         _self.list.push(_voting);
         return _self.list.length - 1;
     }
+
 
     /**
      * @dev checks id existance

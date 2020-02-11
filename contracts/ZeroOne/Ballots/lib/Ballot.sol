@@ -23,6 +23,42 @@ library BallotType {
     }
 
     /**
+     * @dev getting primary info about voting
+     * @return startTime
+     * @return starterGroupId
+     * @return starterAddress
+     * @return questionId
+     * @return status
+     * @return result
+     * @return votingData
+     */
+    function getPrimaryInfo(
+        Ballot storage _self
+    ) 
+        internal
+        view
+        returns (
+            uint startTime,
+            uint starterGroupId,
+            uint starterAddress,
+            uint questionId,
+            BallotStatus status,
+            BallotResult result,
+            bytes storage votingData
+        )
+    {
+        return (
+            _self.startTime,
+            _self.starterGroupId,
+            _self.starterAddress,
+            _self.questionId,
+            _self.status,
+            _self.result,
+            _self.votingData
+        );
+    }
+
+    /**
      @dev set vote of {_user} from {_group}
      @param _group address of group
      @param _user address of user
@@ -32,13 +68,33 @@ library BallotType {
         Ballot storage _self,
         address _group,
         address _user,
-        BallotResult _descision
+        BallotResult _descision,
+        uint256 _voteWeight
     )
         internal
         returns (bool status)
     {
         _self.votes[_group][_user] = _descision;
+        _self.votesWeight[_group][_user] = _voteWeight;
         return true;
+    }
+
+    /**
+     * @dev get user vote in this voting
+     * @param _group address of group
+     * @param _user address of user
+     * @return userVote
+     */
+    function getUserVote(
+        Ballot storage _self,
+        address _group,
+        address _user
+    )
+        internal
+        view
+        returns (BallotResult userVote) 
+    {
+        userVote = _self.votes[_group][_user];
     }
 
     /**
@@ -86,6 +142,10 @@ library BallotType {
         return BallotResult.NOT_ACCEPTED;
     }
 
+    /**
+     * @dev close ballot by calculating result and setting status "CLOSED"
+     * @param _self ballot
+     */
     function closeVoting(
         Ballot storage _self
     )
@@ -95,5 +155,16 @@ library BallotType {
         BallotResult _result = calculateResult();
         setResult(_self, _result);
         return _result;
+    }
+
+
+    function validate(
+        //Ballot memory _self
+    )
+        internal
+        pure
+        returns (bool)
+    {
+        return true;
     }
 }

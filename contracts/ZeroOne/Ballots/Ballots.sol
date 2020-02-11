@@ -14,6 +14,7 @@ contract Ballots {
 
     BallotList.List ballots;
 
+
     event VotingStarted(uint votingId, uint questionId);
 
     event VotingEnded(uint votingId, BallotType.BallotResult descision);
@@ -38,7 +39,6 @@ contract Ballots {
 
     /**
      * @dev getting the voting by id
-     * @return ballot
      */
     function getVoting(
         uint _id
@@ -46,10 +46,17 @@ contract Ballots {
         public
         view
         ballotExist(_id)
-        returns (BallotType.Ballot memory ballot)
+        returns (
+            uint startTime,
+            uint starterGroupId,
+            uint starterAddress,
+            uint questionId,
+            BallotType.BallotStatus status,
+            BallotType.BallotResult result,
+            bytes memory votingData
+        )
     {
-        // TODO: Return primary voting info (mapping error); 
-        return ballots.list[_id];
+        return ballots.list[_id].getPrimaryInfo();
     }
 
     /**
@@ -64,10 +71,36 @@ contract Ballots {
         return ballots.list.length;
     }
 
-    function closeVoting() 
+    function setVote(
+        address _group,
+        address _user,
+        BallotType.BallotResult _descision,
+        uint256 _voteWeight
+    ) 
         public
+        returns (bool success)
     {
         uint votingId = ballots.list.length - 1;
-        ballots.list[votingId].closeVoting();
+        
+        require(
+            ballots.list[votingId].status != BallotType.BallotStatus.CLOSED, 
+            "Voting is closed, you must start new voting before vote"
+            );
+        ballots.list[votingId].setVote(_group, _user, _descision, _voteWeight);
+        return true;
+    }
+
+    /**
+     * @dev closes last voting in list
+     * @return result
+     */
+    function closeVoting() 
+        public
+        returns (
+            BallotType.BallotResult result
+        )
+    {
+        uint votingId = ballots.list.length - 1;
+        return ballots.list[votingId].closeVoting();
     }
 }
