@@ -35,6 +35,15 @@ contract Ballots {
         _;
     }
 
+    modifier noActiveVotings() {
+        uint length = ballots.list.length - 1;
+        require(
+            ballots.list[length].status != BallotType.BallotStatus.ACTIVE,
+            "You have already active voting"
+        );
+        _;
+    }
+
     constructor() public {}
 
     /**
@@ -44,6 +53,7 @@ contract Ballots {
         BallotList.BallotSimple memory _votingPrimary
     )
         public
+        noActiveVotings()
         returns (bool)
     {
         ballots.add(_votingPrimary);
