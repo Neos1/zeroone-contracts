@@ -34,12 +34,12 @@ contract Ballots {
         );
         _;
     }
-
     modifier noActiveVotings() {
-        uint length = ballots.list.length - 1;
-        require(
-            ballots.list[length].status != BallotType.BallotStatus.ACTIVE,
-            "You have already active voting"
+        uint length = ballots.list.length;
+        require(length > 0
+            ? ballots.list[length - 1].status != BallotType.BallotStatus.ACTIVE
+            : true,
+            "You have active voting"
         );
         _;
     }
@@ -54,10 +54,10 @@ contract Ballots {
     )
         public
         noActiveVotings()
-        returns (bool)
+        returns (uint id)
     {
-        ballots.add(_votingPrimary);
-        return true;
+        id = ballots.add(_votingPrimary);
+        emit VotingStarted(id, _votingPrimary.questionId);
     }
 
     /**
@@ -110,6 +110,7 @@ contract Ballots {
             "Voting is closed, you must start new voting before vote"
             );
         ballots.list[votingId].setVote(_group, _user, _descision, _voteWeight);
+        emit UserVote(_group, _user, _descision);
         return true;
     }
 

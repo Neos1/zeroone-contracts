@@ -6,7 +6,7 @@ pragma solidity 0.6.1;
 */
 
 library BallotType {
-    enum BallotStatus { ACTIVE, CLOSED }
+    enum BallotStatus { CLOSED, ACTIVE }
 
     enum BallotResult { NOT_ACCEPTED, POSITIVE, NEGATIVE }
 
