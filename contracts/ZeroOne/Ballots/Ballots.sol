@@ -3,12 +3,14 @@ pragma experimental ABIEncoderV2;
 
 import "./lib/Ballot.sol";
 import "./lib/BallotList.sol";
+import "../Questions/QuestionsWithGroups.sol";
+import "../UserGroups/UserGroups.sol";
 
 /**
  * @title Ballots
  * @dev stores Ballots
  */
-contract Ballots {
+contract Ballots is QuestionsWithGroups, UserGroups {
     using BallotList for BallotList.List;
     using BallotType for BallotType.Ballot;
 
@@ -34,6 +36,7 @@ contract Ballots {
         );
         _;
     }
+
     modifier noActiveVotings() {
         uint length = ballots.list.length;
         require(length > 0
@@ -44,6 +47,30 @@ contract Ballots {
         _;
     }
 
+    modifier userNotVoted(
+        address _group,
+        address _user
+    ) {
+        uint _id = ballots.list.length - 1;
+
+        require(
+            ballots.list[_id].votes[_group][_user] == BallotType.BallotResult.NOT_ACCEPTED,
+            "User already vote"
+        );
+        _;
+    }
+
+    modifier groupIsAllowed(
+        uint _questionId,
+        uint _groupId
+    ) {
+        QuestionType.Question memory question = getQuestion(_questionId);
+        require(
+            _groupId == question.groupId,
+            "This group have no permissions to start voting with this question"
+         );
+        _;
+    }
     constructor() public {}
 
     /**
@@ -54,8 +81,14 @@ contract Ballots {
     )
         public
         noActiveVotings()
+        questionExists(_votingPrimary.questionId)
+        groupIsAllowed(
+            _votingPrimary.questionId,
+            _votingPrimary.starterGroupId
+        )
         returns (uint id)
     {
+        _votingPrimary.endTime = block.timestamp + questions.list[_votingPrimary.questionId].timeLimit;
         id = ballots.add(_votingPrimary);
         emit VotingStarted(id, _votingPrimary.questionId);
     }
@@ -71,6 +104,7 @@ contract Ballots {
         ballotExist(_id)
         returns (
             uint startTime,
+            uint endTime,
             uint starterGroupId,
             address starterAddress,
             uint questionId,
@@ -101,10 +135,14 @@ contract Ballots {
         uint256 _voteWeight
     ) 
         public
+        userNotVoted(
+            _group,
+            _user
+        )
         returns (bool success)
     {
         uint votingId = ballots.list.length - 1;
-        
+        require(ballots.list[votingId].endTime > block.timestamp, "Votes recieving are closed");
         require(
             ballots.list[votingId].status != BallotType.BallotStatus.CLOSED, 
             "Voting is closed, you must start new voting before vote"
@@ -116,15 +154,17 @@ contract Ballots {
 
     /**
      * @dev closes last voting in list
-     * @return result
+     * @return descision
      */
     function closeVoting() 
         public
         returns (
-            BallotType.BallotResult result
+            BallotType.BallotResult descision
         )
     {
         uint votingId = ballots.list.length - 1;
-        return ballots.list[votingId].closeVoting();
+        require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
+        descision = ballots.list[votingId].closeVoting();
+        emit VotingEnded(votingId, descision);
     }
 }

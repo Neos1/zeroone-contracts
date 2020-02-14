@@ -15,6 +15,7 @@ library BallotList {
 
     struct BallotSimple {
         uint starterGroupId;
+        uint endTime;
         address starterAddress;
         uint questionId;
         bytes data;
@@ -34,6 +35,7 @@ library BallotList {
     {
         BallotType.Ballot memory _voting = BallotType.Ballot({
             startTime: block.timestamp,
+            endTime: _votingPrimary.endTime,
             starterGroupId: _votingPrimary.starterGroupId,
             starterAddress: _votingPrimary.starterAddress,
             questionId: _votingPrimary.questionId,

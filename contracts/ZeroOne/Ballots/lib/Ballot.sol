@@ -12,6 +12,7 @@ library BallotType {
 
     struct Ballot {
         uint startTime;
+        uint endTime;
         uint starterGroupId;
         address starterAddress;
         uint questionId;
@@ -25,6 +26,7 @@ library BallotType {
     /**
      * @dev getting primary info about voting
      * @return startTime
+     * @return endTime
      * @return starterGroupId
      * @return starterAddress
      * @return questionId
@@ -39,6 +41,7 @@ library BallotType {
         view
         returns (
             uint startTime,
+            uint endTime,
             uint starterGroupId,
             address starterAddress,
             uint questionId,
@@ -49,6 +52,7 @@ library BallotType {
     {
         return (
             _self.startTime,
+            _self.endTime,
             _self.starterGroupId,
             _self.starterAddress,
             _self.questionId,

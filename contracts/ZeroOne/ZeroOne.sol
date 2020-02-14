@@ -4,13 +4,15 @@ pragma experimental ABIEncoderV2;
 import "./IZeroOne.sol";
 import "./Notifier/Notifier.sol";
 import "../lib/Meta.sol";
+import "./Ballots/Ballots.sol";
+
 
 
 /**
  * @title ZeroOne
  * @dev main ZeroOne contract
  */
-contract ZeroOne is Notifier, IZeroOne {
+contract ZeroOne is Notifier, IZeroOne, Ballots {
     using Meta for bytes;
 
     /**
