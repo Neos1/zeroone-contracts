@@ -266,8 +266,6 @@ contract CustomToken is Ownable {
   }
   
   // TODO:implements this after making Ballot
-
   // add check for address (address is project ?)
-  // Make transfer to voting after Ballot will be maked
   // Make "returning" tokens from project
 }

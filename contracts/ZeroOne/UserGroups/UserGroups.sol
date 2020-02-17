@@ -33,9 +33,7 @@ contract UserGroups {
         );
         _;
     }
-
-    constructor() public {}
-
+    
     /**
      * @notice get group data
      * @param _id group id

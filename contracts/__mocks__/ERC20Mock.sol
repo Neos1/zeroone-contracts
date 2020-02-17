@@ -4,7 +4,7 @@ pragma solidity 0.6.1;
  * @title ERC20
  * @dev simplest mock for testing user group methods
  */
-contract ERC20 {
+contract ERC20Mock {
 
     uint256 private _totalSupply;
       

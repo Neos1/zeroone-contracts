@@ -9,6 +9,15 @@ import "../ZeroOne/ZeroOne.sol";
  * @dev wrapper to test some ZeroOne methods
  */
 contract ZeroOneMock is ZeroOne {
+
+    constructor(address _owners) public {
+        UserGroup.Group memory _group = UserGroup.Group({
+            name: "Owners",
+            groupAddress: _owners,
+            groupType: UserGroup.Type.ERC20
+        });
+        addUserGroup(_group);
+    }
     /**
      * @notice wrapper for internal makeCall method
      * @param _target contract address to make call to

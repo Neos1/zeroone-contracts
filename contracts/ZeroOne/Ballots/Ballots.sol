@@ -74,6 +74,11 @@ contract Ballots is QuestionsWithGroups, UserGroups {
     constructor() public {}
 
     /**
+     * @dev returns the confirmation that this is a project
+     */
+    function isProject() public pure returns (bool) { return true; }
+
+    /**
      * @dev creates new Ballot in list
      */
     function startVoting(
@@ -151,6 +156,22 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         emit UserVote(_group, _user, _descision);
         return true;
     }
+
+    /**
+     * @dev returns confirming that this user is voted
+     * @return confirm
+     */
+     function isUserVoted (
+         address _group,
+         address _user
+     )
+        public
+        view
+        returns(bool confirm)
+     {
+        uint votingId = ballots.list.length - 1;
+        confirm = ballots.list[votingId].votes[_group][_user] != BallotType.BallotResult.NOT_ACCEPTED;
+     }
 
     /**
      * @dev closes last voting in list
