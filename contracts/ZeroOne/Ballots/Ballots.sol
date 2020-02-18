@@ -5,6 +5,7 @@ import "./lib/Ballot.sol";
 import "./lib/BallotList.sol";
 import "../Questions/QuestionsWithGroups.sol";
 import "../UserGroups/UserGroups.sol";
+import "../../__vendor__/IERC20.sol";
 
 /**
  * @title Ballots
@@ -133,11 +134,13 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         return ballots.list.length;
     }
 
+    /**
+     * @dev set {_descision} of {_user} from {_group} with {_voteWeight}
+     */
     function setVote(
         address _group,
         address _user,
-        BallotType.BallotResult _descision,
-        uint256 _voteWeight
+        BallotType.BallotResult _descision
     ) 
         public
         userNotVoted(
@@ -152,10 +155,46 @@ contract Ballots is QuestionsWithGroups, UserGroups {
             ballots.list[votingId].status != BallotType.BallotStatus.CLOSED, 
             "Voting is closed, you must start new voting before vote"
             );
-        ballots.list[votingId].setVote(_group, _user, _descision, _voteWeight);
+        IERC20 group = IERC20(_group);
+        uint256 voteWeight = group.balanceOf(_user);
+        ballots.list[votingId].setVote(_group, _user, _descision, voteWeight);
         emit UserVote(_group, _user, _descision);
         return true;
     }
+
+
+    /**
+     * @dev get userVote
+     */
+    function getUserVote(
+        uint votingId,
+        address _group,
+        address _user
+    ) 
+        public
+        view
+        returns (BallotType.BallotResult descision)
+    {
+
+        return ballots.list[votingId].votes[_group][_user];
+    }
+
+    /**
+     * @dev get user vote weight
+     */
+    function getUserVoteWeight(
+        uint votingId,
+        address _group,
+        address _user
+    ) 
+        public
+        view
+        returns (uint256 weight)
+    {
+
+        return ballots.list[votingId].votesWeight[_group][_user];
+    }
+
 
     /**
      * @dev returns confirming that this user is voted
@@ -172,20 +211,4 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         uint votingId = ballots.list.length - 1;
         confirm = ballots.list[votingId].votes[_group][_user] != BallotType.BallotResult.NOT_ACCEPTED;
      }
-
-    /**
-     * @dev closes last voting in list
-     * @return descision
-     */
-    function closeVoting() 
-        public
-        returns (
-            BallotType.BallotResult descision
-        )
-    {
-        uint votingId = ballots.list.length - 1;
-        require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
-        descision = ballots.list[votingId].closeVoting();
-        emit VotingEnded(votingId, descision);
-    }
 }

@@ -4,7 +4,7 @@ module.exports = {
     name: "Добавить Вопрос",
     description: "Добавление нового вопроса",
     timeLimit: 10 * 3600,
-    methodSelector: "0x686c52c4",
+    methodSelector: "0xea5d11ff",
     paramNames: [
       "GroupId",
       "Name",
@@ -31,7 +31,7 @@ module.exports = {
     name: "Подключить группу пользователей",
     description: "Подключить новую группу пользователей для участия в голосованиях",
     timeLimit: 10 * 3600,
-    methodSelector: "0x952b627c",
+    methodSelector: "0x70b0e2c8",
     paramNames: [
       "Name",
       "Address",
@@ -61,7 +61,7 @@ module.exports = {
     name: "Установить администратора группы",
     description: "Установка администратора в группе кастомных токенов",
     timeLimit: 10 * 3600,
-    methodSelector: "0x3cc0a953",
+    methodSelector: "0x704b6c02",
     paramNames: [
       "Group Address",
       "New Admin Address"

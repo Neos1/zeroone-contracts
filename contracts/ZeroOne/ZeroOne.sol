@@ -27,6 +27,38 @@ contract ZeroOne is Notifier, IZeroOne, Ballots {
     }
 
     /**
+     * @dev closes last voting in list
+     * @return descision
+     */
+    function closeVoting() 
+        public
+        returns (
+            BallotType.BallotResult descision
+        )
+    {
+        uint votingId = ballots.list.length - 1;
+        require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
+        descision = ballots.list[votingId].closeVoting();
+        uint questionId = ballots.list[votingId].questionId;
+
+        MetaData memory meta = MetaData({
+            ballotId: votingId,
+            questionId: questionId,
+            startBlock: ballots.list[votingId].startBlock,
+            endBlock: block.number,
+            result: Result.ACCEPTED
+        });
+
+        makeCall(
+            questions.list[questionId].target, 
+            questions.list[questionId].methodSelector, 
+            ballots.list[votingId].votingData,
+            meta
+        );
+        emit VotingEnded(votingId, descision);
+    }
+
+    /**
      * @notice makes call to contract external method
      * with modified data (meta added)
      * @param _target contract address to make call to

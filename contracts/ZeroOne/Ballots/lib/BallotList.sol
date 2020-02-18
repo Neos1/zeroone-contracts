@@ -34,6 +34,7 @@ library BallotList {
         returns (uint id)
     {
         BallotType.Ballot memory _voting = BallotType.Ballot({
+            startBlock: block.number,
             startTime: block.timestamp,
             endTime: _votingPrimary.endTime,
             starterGroupId: _votingPrimary.starterGroupId,

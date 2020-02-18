@@ -1,13 +1,9 @@
 const ZeroOne = artifacts.require('./ZeroOneMock.sol');
 const Controlled = artifacts.require('./ControlledMock.sol');
-const ERC20 = artifacts.require('./ERC20.sol');
-
-const {questions} = require('./helpers/questions');
 
 contract('ZeroOne', (accounts) => {
     let zeroOne;
     let controlled;
-    let token;
     const deployFrom = accounts[0];
     const param1 = 1;
     const param2 = 'test';
@@ -33,8 +29,8 @@ contract('ZeroOne', (accounts) => {
             return prev;
         }, {});
 
+
     beforeEach(async () => {
-        token = await ERC20.new('test', 'tst', 1000);
         zeroOne = await ZeroOne.new(token.address, { from: deployFrom });
         controlled = await Controlled.new(zeroOne.address, { from: deployFrom });
     });
@@ -64,39 +60,6 @@ contract('ZeroOne', (accounts) => {
             const stored2 = await controlled.param2();
             assert.strictEqual(stored1.toNumber(), 0);
             assert.strictEqual(stored2, '');
-        });
-    });
-
-    describe('addQuestion()', () => {
-        it('should add system questions', async () => {
-            for (let i = 0; i < questions.length; i++) {
-                questions[i].target = zeroOne.address;
-                questions[i].active = true;
-                await zeroOne.addQuestion(questions[i]);
-            }
-            const amount = await zeroOne.getQuestionsAmount()
-            assert.strictEqual(amount.toNumber(), 4);
-        });
-    });
-
-    describe('fullVotingProcess', async () => {
-        it('should make all voting process', async () => {
-            for (let i = 0; i < questions.length; i++) {
-                questions[i].target = zeroOne.address;
-                questions[i].active = true;
-                await zeroOne.addQuestion(questions[i]);
-            }
-            const data = web3.eth.abi.encodeParameters(['string'], ["test"])
-            const votingData = {
-                questionId: 2,
-                starterAddress: deployFrom,
-                starterGroupId: 0,
-                endTime: 0,
-                data,
-            }
-            await zeroOne.startVoting(votingData);
-            const voting = await zeroOne.getVoting(0);
-            
         });
     });
 

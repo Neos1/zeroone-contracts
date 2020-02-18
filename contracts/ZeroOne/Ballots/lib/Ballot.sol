@@ -11,6 +11,7 @@ library BallotType {
     enum BallotResult { NOT_ACCEPTED, POSITIVE, NEGATIVE }
 
     struct Ballot {
+        uint startBlock;
         uint startTime;
         uint endTime;
         uint starterGroupId;
@@ -143,7 +144,7 @@ library BallotType {
         pure
         returns (BallotResult)
     {
-        return BallotResult.NOT_ACCEPTED;
+        return BallotResult.POSITIVE;
     }
 
     /**
