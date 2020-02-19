@@ -15,6 +15,10 @@ import "./Ballots/Ballots.sol";
 contract ZeroOne is Notifier, IZeroOne, Ballots {
     using Meta for bytes;
 
+    event ZeroOneCall(
+        MetaData _meta
+    );
+
     /**
      * @notice for modified functions allows only self external call
      */
@@ -81,5 +85,80 @@ contract ZeroOne is Notifier, IZeroOne, Ballots {
             _method,
             _data.addMetaData(abi.encode(_metaData))
         );
+    }
+
+
+    /**
+     * @dev wrapper for QuestionsWithGroups.addQuestionGroup method
+     * @param _metaData IZeroOne.MetaData
+     * @param _questionGroup QuestionGroup, which will be added
+     */
+    function addQuestionGroup(
+        MetaData memory _metaData,
+        GroupType.Group memory _questionGroup
+    )
+        public
+        onlySelf()
+        returns (uint ballotId)
+    {
+        QuestionsWithGroups.addQuestionGroup(_questionGroup);
+        emit ZeroOneCall(_metaData);
+        return _metaData.ballotId;
+    }
+
+    /**
+     * @dev wrapper for Questions.addQuestion method
+     * @param _metaData IZeroOne.MetaData
+     * @param _question Question, which will be added
+     */
+    function addQuestion(
+        MetaData memory _metaData,
+        QuestionType.Question memory _question
+    )
+        public
+        onlySelf()
+        returns (uint ballotId)
+    {
+        Questions.addQuestion(_question);
+        emit ZeroOneCall(_metaData);
+        return _metaData.ballotId;
+    }
+
+    /**
+     * @dev wrapper for UserGroups.addUserGroup method
+     * @param _metaData IZeroOne.MetaData
+     * @param _group UserGroup, which will be added
+     */
+    function addUserGroup(
+        MetaData memory _metaData,
+        UserGroup.Group memory _group
+    )
+        public
+        onlySelf()
+        returns (uint ballotId)
+    {
+        UserGroups.addUserGroup(_group);
+        emit ZeroOneCall(_metaData);
+        return _metaData.ballotId;
+    }
+
+    /**
+     * @dev wrapper for setAdmin method
+     * @param _metaData IZeroOne.MetaData
+     * @param _group address of group, which admin will be changed
+     * @param _user address of user, which will be new admin
+     */
+    function setGroupAdmin(
+        MetaData memory _metaData,
+        address _group,
+        address _user
+    )
+        public
+        onlySelf()
+        returns(uint ballotId)
+    {
+        _group.call(abi.encodeWithSignature("setAdmin(address)", _user));
+        emit ZeroOneCall(_metaData);
+        return _metaData.ballotId;
     }
 }

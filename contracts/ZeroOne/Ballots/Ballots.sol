@@ -154,9 +154,11 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         require(
             ballots.list[votingId].status != BallotType.BallotStatus.CLOSED, 
             "Voting is closed, you must start new voting before vote"
-            );
+        );
+
         IERC20 group = IERC20(_group);
         uint256 voteWeight = group.balanceOf(_user);
+        group.transferFrom(_user, address(this), voteWeight);
         ballots.list[votingId].setVote(_group, _user, _descision, voteWeight);
         emit UserVote(_group, _user, _descision);
         return true;

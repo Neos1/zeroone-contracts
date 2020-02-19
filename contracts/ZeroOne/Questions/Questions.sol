@@ -73,8 +73,8 @@ contract Questions {
     function addQuestion(
         QuestionType.Question memory _question
     )
-        public
         virtual
+        public
         returns (uint id)
     {
         id = questions.add(_question);
