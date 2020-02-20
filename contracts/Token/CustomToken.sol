@@ -75,12 +75,17 @@ contract CustomToken is IZeroOne, Ownable {
   function symbol() public view returns(string memory) { return _symbol; }
 
 
+  /**
+   * @dev getting balance of tokens for {_user}
+   * @param _user address of user 
+   * @return balance
+   */
   function balanceOf(
     address _user
   ) 
     public 
     view 
-    returns (uint256) 
+    returns (uint256 balance) 
   {
     return _balances[_user];
   }
@@ -88,12 +93,13 @@ contract CustomToken is IZeroOne, Ownable {
   /**
    * @dev add ballot project to list
    * @param _project address of ballot project
+   * @return success
    */
   function addToProjects(
     address _project
   ) 
     public
-    returns (bool)
+    returns (bool success)
   {
     require(_project != address(0), "Address must be non-empty");
     require(!isProjectAddress(_project), "Address already in list");
@@ -104,6 +110,9 @@ contract CustomToken is IZeroOne, Ownable {
 
   /**
    * @dev Transfers tokens from _sender to _recipient
+   * @param _sender
+   * @param _recipient
+   * @param _count
    */
   function _transfer(
     address _sender, 
@@ -125,6 +134,8 @@ contract CustomToken is IZeroOne, Ownable {
 
   /**
    * @dev Set lock status of user tokens in project
+   * @param _project address of ZeroOne project
+   * @param _user address of user
    * @return status
    */
   function _lockTokens(
@@ -142,6 +153,8 @@ contract CustomToken is IZeroOne, Ownable {
 
   /**
    * @dev Set unlock status of user tokens in project
+   * @param _project address of ZeroOne project
+   * @param _user address of user
    * @return status 
   */
   function _unlockTokens(
@@ -157,6 +170,8 @@ contract CustomToken is IZeroOne, Ownable {
 
   /**
    * @dev getter for status of user tokens lock in project
+   * @param _project address of ZeroOne project
+   * @param _user address of user
    * @return isLocked 
   */
   function isTokenLocked(
@@ -235,8 +250,9 @@ contract CustomToken is IZeroOne, Ownable {
   }
 
   /**
-    @dev lock tokens of msg.sender and sending vote to ballot
-    @param _project address of ballot project
+   * @dev lock tokens of msg.sender and sending vote to ballot
+   * @param _sender address of user, which token will be locked
+   * @param _project address of ZeroOne project
    */
   function transferFrom(
     address _sender,
