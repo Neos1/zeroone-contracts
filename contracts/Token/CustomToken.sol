@@ -9,11 +9,11 @@ import "../ZeroOne/IZeroOne.sol";
   @dev Contract implements custom tokens for ZeroOne 
  */
 contract CustomToken is IZeroOne, Ownable {
-  mapping (address => uint256) private _balances;
+  mapping (address => uint256) private balances;
 
-  mapping (address => mapping (address => bool)) private _tokenLocks;
+  mapping (address => mapping (address => bool)) private tokenLocks;
 
-  mapping (address => bool) private _isProjects;
+  mapping (address => bool) private isProjects;
 
   uint256 private _totalSupply;
   
@@ -21,7 +21,7 @@ contract CustomToken is IZeroOne, Ownable {
 
   string private _symbol;
 
-  address[] _holders;
+  address[] holders;
 
   address[] _projects;
 
@@ -29,6 +29,10 @@ contract CustomToken is IZeroOne, Ownable {
   event Transfer(address from, address to, uint256 count);
 
   event TokenLocked(address project, address user);
+
+  event HolderRemover(address holder);
+
+  event HolderAdded(address holder);
 
   event ZeroOneCall(MetaData meta);
 
@@ -46,15 +50,19 @@ contract CustomToken is IZeroOne, Ownable {
     _totalSupply = totalSupply;
     _name = name;
     _symbol = symbol;
-    _balances[msg.sender] = totalSupply;
-    _holders.push(msg.sender);
+    balances[msg.sender] = totalSupply;
+    holders.push(msg.sender);
   }
 
   modifier onlyZeroOne(address _caller) {
-    require(_isProjects[_caller] = true, "Address not contains in projects");
+    require(isProjects[_caller] = true, "Address not contains in projects");
     _;
   }
 
+  modifier onlySelf() {
+    require(msg.sender == address(this), "Sender is not token contract");
+    _;
+  }
 
   /**
    * @dev returns count of tokens
@@ -87,7 +95,7 @@ contract CustomToken is IZeroOne, Ownable {
     view 
     returns (uint256 balance) 
   {
-    return _balances[_user];
+    return balances[_user];
   }
 
   /**
@@ -99,12 +107,13 @@ contract CustomToken is IZeroOne, Ownable {
     address _project
   ) 
     public
+    
     returns (bool success)
   {
     require(_project != address(0), "Address must be non-empty");
     require(!isProjectAddress(_project), "Address already in list");
     _projects.push(_project);
-    _isProjects[_project] = true;
+    isProjects[_project] = true;
     return true;
   }
 
@@ -114,22 +123,65 @@ contract CustomToken is IZeroOne, Ownable {
    * @param _recipient address of recipient of tokens
    * @param _count count of tokens, which will be transferred
    */
-  function _transfer(
+  function transfer(
     address _sender, 
     address _recipient, 
     uint256 _count
   )
     internal 
   {
-    require(_balances[_sender] >= _count, "Value must be less or equal user balance");
+    require(balances[_sender] >= _count, "Value must be less or equal user balance");
 
-    uint256 newSenderBalance = _balances[_sender] - _count;
-    uint256 newRecipientBalance = _balances[_recipient] + _count;
+    uint256 newSenderBalance = balances[_sender] - _count;
+    uint256 newRecipientBalance = balances[_recipient] + _count;
 
-    _balances[_sender] = newSenderBalance;
-    _balances[_recipient] = newRecipientBalance;
+    if (balances[_recipient] == 0) {
+      addHolder(_recipient);
+    }
+
+    balances[_sender] = newSenderBalance;
+    balances[_recipient] = newRecipientBalance;
+
+    if (newSenderBalance == 0) {
+      removeHolder(_sender);
+    }
+
 
     emit Transfer(_sender, _recipient, _count);
+  }
+
+  /**
+   * @dev removing holder from the list
+   * @param _holder holder, which will be removed from list
+   */
+  function removeHolder(
+    address _holder
+  ) 
+    internal
+    onlySelf
+  {
+    for (uint i = 0; i < holders.length; i++) {
+      if (_holder == holders[i]) {
+        holders[i] = holders[holders.length - 1];
+        delete holders[holders.length - 1];
+        holders.length--;
+        emit HolderRemoved(_holder);
+      }
+    }
+  }
+
+  /**
+   * @dev adding holder to the list
+   * @param _newHolder new holder, which will be added to list
+   */
+  function addHolder(
+    address _newHolder
+  ) 
+    internal
+    onlySelf
+  {
+    holders.push(_newHolder);
+    emit HolderAdded(_newHolder);
   }
 
   /**
@@ -138,18 +190,19 @@ contract CustomToken is IZeroOne, Ownable {
    * @param _user address of user
    * @return status
    */
-  function _lockTokens(
+  function lockTokens(
     address _project,
     address _user
   )
     internal
     returns (bool status) 
   {
-      _tokenLocks[_project][_user] = true;
+      tokenLocks[_project][_user] = true;
       emit TokenLocked(_project, _user);
 
-      return _tokenLocks[_project][_user];
+      return tokenLocks[_project][_user];
   }
+
 
   /**
    * @dev Set unlock status of user tokens in project
@@ -157,15 +210,15 @@ contract CustomToken is IZeroOne, Ownable {
    * @param _user address of user
    * @return status 
   */
-  function _unlockTokens(
+  function unlockTokens(
     address _project,
     address _user
   )
     internal
     returns (bool status) 
   {
-      _tokenLocks[_project][_user] = false;
-      return !_tokenLocks[_project][_user];
+      tokenLocks[_project][_user] = false;
+      return !tokenLocks[_project][_user];
   }
 
   /**
@@ -183,31 +236,7 @@ contract CustomToken is IZeroOne, Ownable {
     returns (bool isLocked)
   {
     require(isProjectAddress(_project), "Address is not in project list");
-    return _tokenLocks[_project][_user];
-  }
-
-  /**
-   * @dev Transfer tokens from {_from} to {_to};
-   * @param _from adress of user, which tokens will be sended
-   * @param _to address of user, which will be token recipient 
-   * @param _count count of {_to} user tokens
-   * @return success
-   */
-  function transferBeetweenUsers(
-    address _from,
-    address _to,  
-    uint256 _count
-  ) 
-    public
-    onlyOwner()
-    returns (bool success) 
-  {
-    require(_from != address(0), "Sender address must be not null");
-    require(_to != address(0), "Recipient address must be not null");
-    require(_balances[_from] >= _count, "Value must be less or equal user balance");
-    
-    _transfer(_from, _to, _count);
-    success = true;
+    return tokenLocks[_project][_user];
   }
 
   /**
@@ -256,14 +285,19 @@ contract CustomToken is IZeroOne, Ownable {
    */
   function transferFrom(
     address _sender,
-    address _project
+    address _reciepient,
+    uint256 _count
   )
     public
-    onlyZeroOne(msg.sender)
   {
-    require(_project != address(0), "Address must be non-empty");
-    require(isProjectAddress(_project), "Address is not in project list");
-    _lockTokens(_project, _sender);
+    require(_sender != address(0), "Address must be non-empty");
+    require(balanceOf(_sender) > 0, "Balance of sender must be greater, then zero");
+
+    if (msg.sender == owner()) {
+      transfer(_sender, _reciepient, _count);
+    } else if (isProjectAddress(msg.sender)) {
+      lockTokens(_project, _sender);
+    }
   }
 
   /**
@@ -271,14 +305,14 @@ contract CustomToken is IZeroOne, Ownable {
    * @param _project address of project
    * @return isLocked
   */
-  function returnFromVoting(
+  function revoke(
     address _project
   ) 
     public
     returns(bool isLocked)
   {
      require(isProjectAddress(_project), "Address is not in project list");
-     _unlockTokens(_project, msg.sender);
+     unlockTokens(_project, msg.sender);
      return !isTokenLocked(_project, msg.sender);
   }
 
