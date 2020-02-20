@@ -111,7 +111,7 @@ contract CustomToken is Ownable {
         returns (bool success)
     {
         require(_project != address(0), "Address must be non-empty");
-        require(!isProjectAddress(_project), "Address already in list");
+        require(!isProjects[_project], "Address already in list");
         projects.push(_project);
         isProjects[_project] = true;
         emit ProjectAdded(_project);
@@ -133,6 +133,7 @@ contract CustomToken is Ownable {
             if (_project == projects[i]) {
                 projects[i] = projects[projects.length - 1];
                 delete projects[projects.length - 1];
+                isProjects[_project] = false;
                 emit ProjectRemoved(_project);
             }
         }
