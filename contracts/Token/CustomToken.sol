@@ -16,7 +16,7 @@ contract CustomToken is IZeroOne, Ownable {
     mapping (address => bool) private isProjects;
 
     uint256 private _totalSupply;
-    
+
     string private _name;
 
     string private _symbol;
@@ -24,7 +24,6 @@ contract CustomToken is IZeroOne, Ownable {
     address[] holders;
 
     address[] _projects;
-
 
     event Transfer(address from, address to, uint256 count);
 
@@ -37,11 +36,11 @@ contract CustomToken is IZeroOne, Ownable {
     event ZeroOneCall(MetaData meta);
 
     /**
-    * @dev Contrsuctor of tokens
-    * @param name name of token
-    * @param symbol short name of token
-    * @param totalSupply count of tokens
-    */
+     * @dev Contrsuctor of tokens
+     * @param name name of token
+     * @param symbol short name of token
+     * @param totalSupply count of tokens
+     */
     constructor(
         string memory name, 
         string memory symbol, 
@@ -65,29 +64,29 @@ contract CustomToken is IZeroOne, Ownable {
     }
 
     /**
-    * @dev returns count of tokens
-    * @return totalSupply
-    */
+     * @dev returns count of tokens
+     * @return totalSupply
+     */
     function totalSupply() public view returns (uint256) { return _totalSupply; }
 
     /**
-    * @dev returns count of tokens
-    * @return name of token
-    */
+     * @dev returns count of tokens
+     * @return name of token
+     */
     function name() public view returns(string memory) { return _name; }
 
     /**
-    * @dev returns count of tokens
-    * @return symbol of token
-    */
+     * @dev returns count of tokens
+     * @return symbol of token
+     */
     function symbol() public view returns(string memory) { return _symbol; }
 
 
     /**
-    * @dev getting balance of tokens for {_user}
-    * @param _user address of user 
-    * @return balance
-    */
+     * @dev getting balance of tokens for {_user}
+     * @param _user address of user 
+     * @return balance
+     */
     function balanceOf(
         address _user
     ) 
@@ -99,14 +98,14 @@ contract CustomToken is IZeroOne, Ownable {
     }
 
     /**
-    * @dev add ballot project to list
-    * @param _project address of ballot project
-    * @return success
-    */
+     * @dev add ballot project to list
+     * @param _project address of ballot project
+     * @return success
+     */
     function addToProjects(
         address _project
     ) 
-        public
+        internal
         returns (bool success)
     {
         require(_project != address(0), "Address must be non-empty");
