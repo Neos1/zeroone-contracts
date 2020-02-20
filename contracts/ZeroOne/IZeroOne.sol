@@ -19,4 +19,8 @@ interface IZeroOne {
         uint endBlock;
         Result result;
     }
+
+    function updateUserVote(address project, address user, uint256 newVoteWeight) external returns(bool);
+
+    function isUserVoted(address project, address user) external returns(bool); 
 }

@@ -8,7 +8,7 @@ import "../ZeroOne/IZeroOne.sol";
 @title CustomToken
 @dev Contract implements custom tokens for ZeroOne 
 */
-contract CustomToken is IZeroOne, Ownable {
+contract CustomToken is Ownable {
     mapping (address => uint256) private balances;
 
     mapping (address => mapping (address => bool)) private tokenLocks;
@@ -23,17 +23,19 @@ contract CustomToken is IZeroOne, Ownable {
 
     address[] holders;
 
-    address[] _projects;
+    address[] projects;
 
     event Transfer(address from, address to, uint256 count);
 
     event TokenLocked(address project, address user);
 
-    event HolderRemover(address holder);
+    event HolderRemoved(address holder);
 
     event HolderAdded(address holder);
 
-    event ZeroOneCall(MetaData meta);
+    event ProjectAdded(address project);
+
+    event ProjectRemoved(address project);
 
     /**
      * @dev Contrsuctor of tokens
@@ -110,9 +112,30 @@ contract CustomToken is IZeroOne, Ownable {
     {
         require(_project != address(0), "Address must be non-empty");
         require(!isProjectAddress(_project), "Address already in list");
-        _projects.push(_project);
+        projects.push(_project);
         isProjects[_project] = true;
+        emit ProjectAdded(_project);
         return true;
+    }
+
+    /**
+     * @dev removing projects from the list
+     * can called only by project, which will be removed
+     * @param _project address of ZeroOne project
+     */
+    function removeFromProjects(
+        address _project
+    ) 
+        public 
+        onlyZeroOne(_project)
+    {
+        for (uint i = 0; i < projects.length; i++) {
+            if (_project == projects[i]) {
+                projects[i] = projects[projects.length - 1];
+                delete projects[projects.length - 1];
+                emit ProjectRemoved(_project);
+            }
+        }
     }
 
     /**
@@ -146,6 +169,25 @@ contract CustomToken is IZeroOne, Ownable {
     }
 
     /**
+     * @dev Function, which find ZeroOne projects, where user is voted
+     * and updating votes in this project
+     * @param _user address of user, which vote will be updated
+     */
+    function onTokenTransfer(
+        address _user
+    ) 
+        internal
+        onlySelf
+    {
+        for (uint i = 0; i < projects.length; i++) {
+            if (isTokenLocked(projects[i], _user)) {
+                IZeroOne project = IZeroOne(projects[i]);
+                project.updateUserVote(address(this), _user, balanceOf(_user));
+            }
+        }
+    }
+
+    /**
      * @dev removing holder from the list
      * @param _holder holder, which will be removed from list
      */
@@ -159,7 +201,6 @@ contract CustomToken is IZeroOne, Ownable {
             if (_holder == holders[i]) {
                 holders[i] = holders[holders.length - 1];
                 delete holders[holders.length - 1];
-                holders.length--;
                 emit HolderRemoved(_holder);
             }
         }
@@ -243,7 +284,7 @@ contract CustomToken is IZeroOne, Ownable {
         view 
         returns(address[] memory) 
     {
-        return _projects;
+        return projects;
     }
 
     /**
@@ -262,8 +303,8 @@ contract CustomToken is IZeroOne, Ownable {
 
         isProject = false;
 
-        for (uint i = 0; i < _projects.length; i++) {
-            address ballotAddress = _projects[i];
+        for (uint i = 0; i < projects.length; i++) {
+            address ballotAddress = projects[i];
             if (ballotAddress == _address) {
                 isProject = true; 
                 break;
@@ -276,7 +317,8 @@ contract CustomToken is IZeroOne, Ownable {
     /**
      * @dev lock tokens of msg.sender and sending vote to ballot
      * @param _sender address of user, which token will be locked
-     * @param _project address of ZeroOne project
+     * @param _reciepient address of ZeroOne project
+     * @param _count count of tokens
      */
     function transferFrom(
         address _sender,
@@ -290,8 +332,10 @@ contract CustomToken is IZeroOne, Ownable {
 
         if (msg.sender == owner()) {
             transfer(_sender, _reciepient, _count);
+            onTokenTransfer(_sender);
+            onTokenTransfer(_reciepient);
         } else if (isProjectAddress(msg.sender)) {
-            lockTokens(_project, _sender);
+            lockTokens(_reciepient, _sender);
         }
     }
 
@@ -314,12 +358,10 @@ contract CustomToken is IZeroOne, Ownable {
     /**
      * @dev Transfers ownership of the contract to a new account (`_newOwner`).
      * Can only be called by the ZeroOne project.
-     * @param _meta IZeroOne.MetaData struct
      * @param _newOwner account, which will be setted as new owner
      */
-    function transferOwnership(MetaData memory _meta, address _newOwner) public onlyZeroOne(msg.sender) {
+    function transferOwnership(address _newOwner) public onlyZeroOne(msg.sender) {
         _transferOwnership(_newOwner);
-        emit ZeroOneCall(_meta);
     }
 
     
