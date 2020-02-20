@@ -108,6 +108,7 @@ contract CustomToken is Ownable {
         address _project
     ) 
         internal
+        onlyOwner
         returns (bool success)
     {
         require(_project != address(0), "Address must be non-empty");
