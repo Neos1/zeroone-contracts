@@ -1,15 +1,19 @@
 pragma solidity 0.6.1;
+pragma experimental ABIEncoderV2;
 
 import "../lib/Ownable.sol";
+import "../ZeroOne/IZeroOne.sol";
 
 /**
- * @title CustomToken
- * @dev Contract implements custom tokens for ZeroOne 
+  @title CustomToken
+  @dev Contract implements custom tokens for ZeroOne 
  */
-contract CustomToken is Ownable {
+contract CustomToken is IZeroOne, Ownable {
   mapping (address => uint256) private _balances;
 
   mapping (address => mapping (address => bool)) private _tokenLocks;
+
+  mapping (address => bool) private _isProjects;
 
   uint256 private _totalSupply;
   
@@ -24,7 +28,9 @@ contract CustomToken is Ownable {
 
   event Transfer(address from, address to, uint256 count);
 
-  event TokenLocked (address project, address user);
+  event TokenLocked(address project, address user);
+
+  event ZeroOneCall(MetaData meta);
 
   /**
    * @dev Contrsuctor of tokens
@@ -42,6 +48,11 @@ contract CustomToken is Ownable {
     _symbol = symbol;
     _balances[msg.sender] = totalSupply;
     _holders.push(msg.sender);
+  }
+
+  modifier onlyZeroOne(address _caller) {
+    require(_isProjects[_caller] = true, "Address not contains in projects");
+    _;
   }
 
 
@@ -64,36 +75,14 @@ contract CustomToken is Ownable {
   function symbol() public view returns(string memory) { return _symbol; }
 
 
-  /**
-   * @dev method for getting current token balance of {_user}
-   * @param _user address of user
-   * @return balance
-   */
   function balanceOf(
     address _user
   ) 
     public 
     view 
-    returns (uint256 balance) 
+    returns (uint256) 
   {
     return _balances[_user];
-  }
-
-  /**
-   * @dev Sets new administrator in Ownable
-   * @param _newAdmin address of new administrator
-   * @return is admin successfully changed 
-   */
-  function setAdmin(
-    address _newAdmin
-  ) 
-    public
-    returns (bool) 
-  {
-    require(_newAdmin != address(0), "Address must be non-empty");
-    require(!isProjectAddress(_newAdmin), "Address used as project");
-    transferOwnership(_newAdmin);
-    return owner() == _newAdmin;
   }
 
   /**
@@ -109,6 +98,7 @@ contract CustomToken is Ownable {
     require(_project != address(0), "Address must be non-empty");
     require(!isProjectAddress(_project), "Address already in list");
     _projects.push(_project);
+    _isProjects[_project] = true;
     return true;
   }
 
@@ -153,7 +143,7 @@ contract CustomToken is Ownable {
   /**
    * @dev Set unlock status of user tokens in project
    * @return status 
-   */
+  */
   function _unlockTokens(
     address _project,
     address _user
@@ -168,7 +158,7 @@ contract CustomToken is Ownable {
   /**
    * @dev getter for status of user tokens lock in project
    * @return isLocked 
-   */
+  */
   function isTokenLocked(
     address _project,
     address _user
@@ -182,23 +172,27 @@ contract CustomToken is Ownable {
   }
 
   /**
-    @dev Transfer tokens from User to admin;
+   * @dev Transfer tokens from {_from} to {_to};
+   * @param _from adress of user, which tokens will be sended
+   * @param _to address of user, which will be token recipient 
+   * @param _count count of {_to} user tokens
+   * @return success
    */
-  function transferFrom(
+  function transferBeetweenUsers(
     address _from,
     address _to,  
     uint256 _count
   ) 
     public
     onlyOwner()
-    returns (bool) 
+    returns (bool success) 
   {
     require(_from != address(0), "Sender address must be not null");
     require(_to != address(0), "Recipient address must be not null");
     require(_balances[_from] >= _count, "Value must be less or equal user balance");
     
     _transfer(_from, _to, _count);
-    return true;
+    success = true;
   }
 
   /**
@@ -215,6 +209,7 @@ contract CustomToken is Ownable {
 
   /**
    * @dev check if address using as project
+   * @param _address address, which will be checked
    * @return isProject
    */
   function isProjectAddress(
@@ -240,25 +235,26 @@ contract CustomToken is Ownable {
   }
 
   /**
-   * @dev lock tokens of msg.sender and sending vote to ballot
-   * @param _project address of ballot project
+    @dev lock tokens of msg.sender and sending vote to ballot
+    @param _project address of ballot project
    */
-  function sendVote(
+  function transferFrom(
+    address _sender,
     address _project
   )
     public
+    onlyZeroOne(msg.sender)
   {
     require(_project != address(0), "Address must be non-empty");
     require(isProjectAddress(_project), "Address is not in project list");
-    _lockTokens(_project, msg.sender);
-    // TODO: implement sending descision in project
+    _lockTokens(_project, _sender);
   }
 
   /**
    * @dev unlocks the tokens of msg.sender
    * @param _project address of project
    * @return isLocked
-   */
+  */
   function returnFromVoting(
     address _project
   ) 
@@ -269,10 +265,20 @@ contract CustomToken is Ownable {
      _unlockTokens(_project, msg.sender);
      return !isTokenLocked(_project, msg.sender);
   }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`_newOwner`).
+     * Can only be called by the ZeroOne project.
+     * @param _meta IZeroOne.MetaData struct
+     * @param _newOwner account, which will be setted as new owner
+     */
+    function transferOwnership(MetaData memory _meta, address _newOwner) public onlyZeroOne(msg.sender) {
+        _transferOwnership(_newOwner);
+        emit ZeroOneCall(_meta);
+    }
+
   
   // TODO:implements this after making Ballot
-
   // add check for address (address is project ?)
-  // Make transfer to voting after Ballot will be maked
   // Make "returning" tokens from project
 }
