@@ -110,9 +110,9 @@ contract CustomToken is IZeroOne, Ownable {
 
   /**
    * @dev Transfers tokens from _sender to _recipient
-   * @param _sender
-   * @param _recipient
-   * @param _count
+   * @param _sender address of token sender
+   * @param _recipient address of recipient of tokens
+   * @param _count count of tokens, which will be transferred
    */
   function _transfer(
     address _sender, 
