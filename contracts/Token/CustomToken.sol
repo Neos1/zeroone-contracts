@@ -13,7 +13,9 @@ contract CustomToken is Ownable {
 
     mapping (address => mapping (address => bool)) private tokenLocks;
 
-    mapping (address => bool) private isProjects;
+    mapping (address => bool) private projectExists;
+
+    mapping (address => uint) private projectIndexes;
 
     uint256 private _totalSupply;
 
@@ -53,10 +55,11 @@ contract CustomToken is Ownable {
         _symbol = symbol;
         balances[msg.sender] = totalSupply;
         holders.push(msg.sender);
+        projects.push(address(0));
     }
 
     modifier onlyZeroOne(address _caller) {
-        require(isProjects[_caller] = true, "Address not contains in projects");
+        require(projectExists[_caller] = true, "Address not contains in projects");
         _;
     }
 
@@ -112,9 +115,10 @@ contract CustomToken is Ownable {
         returns (bool success)
     {
         require(_project != address(0), "Address must be non-empty");
-        require(!isProjects[_project], "Address already in list");
+        require(!projectExists[_project], "Address already in list");
         projects.push(_project);
-        isProjects[_project] = true;
+        projectExists[_project] = true;
+        projectIndexes[_project] = projects.length - 1;
         emit ProjectAdded(_project);
         return true;
     }
@@ -130,14 +134,11 @@ contract CustomToken is Ownable {
         public 
         onlyZeroOne(_project)
     {
-        for (uint i = 0; i < projects.length; i++) {
-            if (_project == projects[i]) {
-                projects[i] = projects[projects.length - 1];
-                delete projects[projects.length - 1];
-                isProjects[_project] = false;
-                emit ProjectRemoved(_project);
-            }
-        }
+        uint index = projectIndexes[_project];
+        projectExists[_project] = false;
+        projects[index] = projects[projects.length - 1];
+        projects.pop();
+        emit ProjectRemoved(_project);
     }
 
     /**
@@ -328,6 +329,7 @@ contract CustomToken is Ownable {
         uint256 _count
     )
         public
+        returns (bool)
     {
         require(_sender != address(0), "Address must be non-empty");
         require(balanceOf(_sender) > 0, "Balance of sender must be greater, then zero");
@@ -339,6 +341,7 @@ contract CustomToken is Ownable {
         } else if (isProjectAddress(msg.sender)) {
             lockTokens(_reciepient, _sender);
         }
+        return true;
     }
 
     /**

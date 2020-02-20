@@ -33,9 +33,9 @@ contract('CustomToken', (accounts) => {
     });
   });
 
-  describe('setAdmin()', () => {
+  describe('transferOwnership()', () => {
     it('should change admin of tokens', async() => {
-      await token.setAdmin(address);
+      await token.transferOwnership(address);
       const owner = await token.owner();
       assert.strictEqual(owner.toUpperCase(), address.toUpperCase());
     });
@@ -43,7 +43,7 @@ contract('CustomToken', (accounts) => {
     it('should fail on change admin, which address contains in projects', async () => {
       await token.addToProjects(address);
       try {
-        await token.setAdmin(address);
+        await token.transferOwnership(address);
       } catch ({ message }) {
         assert.strictEqual(message, getErrorMessage('Address used as project'));
       }
@@ -51,9 +51,9 @@ contract('CustomToken', (accounts) => {
 
     it('should fail on change admin with incorrect address', async () => {
       try {
-        await token.setAdmin('0x');
+        await token.transferOwnership('0x');
       } catch ({ message }) {
-        assert.strictEqual(message, 'invalid address (arg="_newAdmin", coderType="address", value="0x")');
+        assert.strictEqual(message, 'invalid address (arg="_newOwner", coderType="address", value="0x")');
       }
     });
 
@@ -61,7 +61,6 @@ contract('CustomToken', (accounts) => {
   
   describe('addToProjects', () => {
     it('should successfully add address to projects', async() => {
-      const projects = [address]
       await token.addToProjects(address);
       const uploadedProjects = await token.getProjects();
       for (let i = 0; i< uploadedProjects.length; i++) {
