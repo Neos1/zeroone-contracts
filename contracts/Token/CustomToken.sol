@@ -5,9 +5,9 @@ import "../lib/Ownable.sol";
 import "../ZeroOne/IZeroOne.sol";
 
 /**
-@title CustomToken
-@dev Contract implements custom tokens for ZeroOne 
-*/
+ * @title CustomToken
+ * @dev Contract implements custom tokens for ZeroOne 
+ */
 contract CustomToken is Ownable {
     mapping (address => uint256) private balances;
 
@@ -15,7 +15,9 @@ contract CustomToken is Ownable {
 
     mapping (address => bool) private projectExists;
 
-    mapping (address => uint) private projectIndexes;
+    mapping (address => uint) private projectsIndexes;
+
+    mapping (address => uint) holdersIndexes;
 
     uint256 private _totalSupply;
 
@@ -119,7 +121,7 @@ contract CustomToken is Ownable {
         require(projects.length < 11, "Limit of projects are riched");
         projects.push(_project);
         projectExists[_project] = true;
-        projectIndexes[_project] = projects.length - 1;
+        projectsIndexes[_project] = projects.length - 1;
         emit ProjectAdded(_project);
         return true;
     }
@@ -135,9 +137,15 @@ contract CustomToken is Ownable {
         public 
         onlyZeroOne
     {
-        uint index = projectIndexes[_project];
+        uint index = projectsIndexes[_project];
+        address lastProjectInList = projects[projects.length - 1];
+
         projectExists[_project] = false;
-        projects[index] = projects[projects.length - 1];
+        projectsIndexes[_project] = 0;
+
+        projects[index] = lastProjectInList;
+        projectsIndexes[lastProjectInList] = index;
+
         projects.pop();
         emit ProjectRemoved(_project);
     }
@@ -199,13 +207,13 @@ contract CustomToken is Ownable {
     ) 
         internal
     {
-        for (uint i = 0; i < holders.length; i++) {
-            if (_holder == holders[i]) {
-                holders[i] = holders[holders.length - 1];
-                delete holders[holders.length - 1];
-                emit HolderRemoved(_holder);
-            }
-        }
+        uint index = holdersIndexes[_holder];
+        address lastHolderInList = holders[holders.length - 1];
+
+        holders[index] = lastHolderInList;
+        holdersIndexes[lastHolderInList] = index;
+        holders.pop();
+        emit HolderRemoved(_holder);
     }
 
     /**
@@ -341,7 +349,7 @@ contract CustomToken is Ownable {
      */
     function revoke(
         address _project
-    ) 
+    )
         public
         returns(bool isUnlocked)
     {
@@ -366,7 +374,6 @@ contract CustomToken is Ownable {
         _transferOwnership(_newOwner);
     }
 
-    
     // TODO:implements this after making Ballot
     // add check for address (address is project ?)
 }
