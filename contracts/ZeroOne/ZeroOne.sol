@@ -99,12 +99,31 @@ contract ZeroOne is Notifier, IZeroOne {
         uint index = uint(ballot.votes[tokenAddr][user]);
         uint256 oldDescisionWeight = ballot.descisionWeights[tokenAddr][index];
 
-        ballot.votesWeight[tokenAddr][user] = newVoteWeight;
-        ballot.descisionWeights[tokenAddr][index] = oldDescisionWeight - oldVoteWeight + newVoteWeight;
-
-        if (newVoteWeight == 0) {
-            ballot.votes[tokenAddr][user] = BallotResult.NOT_ACCEPTED;
+        if (ballot.status == BallotStatus.ACTIVE) {
+            ballot.votesWeight[tokenAddr][user] = newVoteWeight;
+            ballot.descisionWeights[tokenAddr][index] = oldDescisionWeight - oldVoteWeight + newVoteWeight;
+            if (newVoteWeight == 0) {
+                ballot.votes[tokenAddr][user] = BallotResult.NOT_ACCEPTED;
+            }
         }
+    }
+
+    function getUserVote(address tokenAddr, address user) 
+        public 
+        view
+        override
+        returns(uint)
+    {
+        return uint(ballot.votes[tokenAddr][user]);
+    }
+
+    function getUserVoteWeight(address tokenAddr, address user) 
+        public 
+        view
+        override
+        returns(uint256)
+    {
+       return ballot.votesWeight[tokenAddr][user];
     }
 
     function isUserVoted(address tokenAddr, address user)
@@ -115,4 +134,26 @@ contract ZeroOne is Notifier, IZeroOne {
         return ballot.votes[tokenAddr][user] != BallotResult.NOT_ACCEPTED;
     }
 
+    function closeVoting()
+        public
+        override
+    {
+        require(block.timestamp > ballot.endTime, "Time is not over");
+        ballot.status = BallotStatus.CLOSED;
+    }
+
+    function setGroupAdmin(
+        address tokenAddr, 
+        address newOwner
+    )
+        public
+        override 
+    {
+        tokenAddr.call(abi.encodeWithSignature("transferOwnership(address)", newOwner));
+    }
+
+    function disableUserGroup(address tokenAddr) public {
+        tokenAddr.call(abi.encodeWithSignature("removeFromProjects(address)", address(this)));
+
+    }
 }

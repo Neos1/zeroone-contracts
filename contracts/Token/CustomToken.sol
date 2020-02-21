@@ -58,8 +58,8 @@ contract CustomToken is Ownable {
         projects.push(address(0));
     }
 
-    modifier onlyZeroOne(address _caller) {
-        require(projectExists[_caller] = true, "Address not contains in projects");
+    modifier onlyZeroOne {
+        require(projectExists[msg.sender] == true, "Address not contains in projects");
         _;
     }
 
@@ -110,12 +110,13 @@ contract CustomToken is Ownable {
     function addToProjects(
         address _project
     ) 
-        internal
+        public
         onlyOwner
         returns (bool success)
     {
         require(_project != address(0), "Address must be non-empty");
         require(!projectExists[_project], "Address already in list");
+        require(projects.length < 11, "Limit of projects are riched");
         projects.push(_project);
         projectExists[_project] = true;
         projectIndexes[_project] = projects.length - 1;
@@ -132,7 +133,7 @@ contract CustomToken is Ownable {
         address _project
     ) 
         public 
-        onlyZeroOne(_project)
+        onlyZeroOne
     {
         uint index = projectIndexes[_project];
         projectExists[_project] = false;
@@ -180,9 +181,8 @@ contract CustomToken is Ownable {
         address _user
     ) 
         internal
-        onlySelf
     {
-        for (uint i = 0; i < projects.length; i++) {
+        for (uint i = 1; i < projects.length; i++) {
             if (isTokenLocked(projects[i], _user)) {
                 IZeroOne project = IZeroOne(projects[i]);
                 project.updateUserVote(address(this), _user, balanceOf(_user));
@@ -198,7 +198,6 @@ contract CustomToken is Ownable {
         address _holder
     ) 
         internal
-        onlySelf
     {
         for (uint i = 0; i < holders.length; i++) {
             if (_holder == holders[i]) {
@@ -217,7 +216,6 @@ contract CustomToken is Ownable {
         address _newHolder
     ) 
         internal
-        onlySelf
     {
         holders.push(_newHolder);
         emit HolderAdded(_newHolder);
@@ -238,7 +236,6 @@ contract CustomToken is Ownable {
     {
         tokenLocks[_project][_user] = true;
         emit TokenLocked(_project, _user);
-
         return tokenLocks[_project][_user];
     }
 
@@ -303,18 +300,7 @@ contract CustomToken is Ownable {
         returns (bool isProject) 
     {
         require(_address != address(0), "Address must be non-empty");
-
-        isProject = false;
-
-        for (uint i = 0; i < projects.length; i++) {
-            address ballotAddress = projects[i];
-            if (ballotAddress == _address) {
-                isProject = true; 
-                break;
-            } else {
-                isProject = false;
-            }
-        }
+        isProject = projectExists[_address];
     }
 
     /**
@@ -331,6 +317,10 @@ contract CustomToken is Ownable {
         public
         returns (bool)
     {
+        require(
+            (msg.sender == owner() || isProjectAddress(msg.sender)), 
+            "This operation is not allowed for this address"
+        );
         require(_sender != address(0), "Address must be non-empty");
         require(balanceOf(_sender) > 0, "Balance of sender must be greater, then zero");
 
@@ -347,15 +337,22 @@ contract CustomToken is Ownable {
     /**
      * @dev unlocks the tokens of msg.sender
      * @param _project address of project
-     * @return isLocked
+     * @return isUnlocked
      */
     function revoke(
         address _project
     ) 
         public
-        returns(bool isLocked)
+        returns(bool isUnlocked)
     {
         require(isProjectAddress(_project), "Address is not in project list");
+        IZeroOne project = IZeroOne(_project);
+        require(
+            project.isUserVoted(address(this), msg.sender) == true,
+            "User not voted, nothing to unlock"
+        );
+        
+        project.updateUserVote(address(this), msg.sender, 0);
         unlockTokens(_project, msg.sender);
         return !isTokenLocked(_project, msg.sender);
     }
@@ -365,7 +362,7 @@ contract CustomToken is Ownable {
      * Can only be called by the ZeroOne project.
      * @param _newOwner account, which will be setted as new owner
      */
-    function transferOwnership(address _newOwner) public onlyZeroOne(msg.sender) {
+    function transferOwnership(address _newOwner) public onlyZeroOne {
         _transferOwnership(_newOwner);
     }
 
