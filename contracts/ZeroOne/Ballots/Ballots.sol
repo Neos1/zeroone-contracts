@@ -80,7 +80,9 @@ contract Ballots is QuestionsWithGroups, UserGroups {
     function isProject() public pure returns (bool) { return true; }
 
     /**
-     * @dev creates new Ballot in list
+     * @dev creates new Ballot in list, emits {VotingStarted}
+     * @param _votingPrimary primary info about voting
+     * @return id of new voting
      */
     function startVoting(
         BallotList.BallotSimple memory _votingPrimary
@@ -101,6 +103,15 @@ contract Ballots is QuestionsWithGroups, UserGroups {
 
     /**
      * @dev getting the voting by id
+     * @param _id id of voting
+     * @return startTime
+     * @return endTime
+     * @return starterGroupId
+     * @return starterAddress
+     * @return questionId
+     * @return status
+     * @return result
+     * @return votingData
      */
     function getVoting(
         uint _id
@@ -135,7 +146,12 @@ contract Ballots is QuestionsWithGroups, UserGroups {
     }
 
     /**
-     * @dev set {_descision} of {_user} from {_group} with {_voteWeight}
+     * @dev set {_descision} of {_user} from {_group}
+     * method fetching balance of {_user} in {_group} and writing vote in voting struct
+     * @param _group address of group
+     * @param _user address of user
+     * @param _descision descision of {_user}
+     * @return success
      */
     function setVote(
         address _group,
@@ -166,26 +182,35 @@ contract Ballots is QuestionsWithGroups, UserGroups {
 
 
     /**
-     * @dev get userVote
+     * @dev returns descision of {_user} from {_group} in voting with {_votingId}
+     * @param _votingId id of voting
+     * @param _group address of group
+     * @param _user address of user
+     * @return descision
      */
     function getUserVote(
-        uint votingId,
+        uint _votingId,
         address _group,
         address _user
     ) 
         public
         view
+        ballotExist(_votingId)
         returns (BallotType.BallotResult descision)
     {
 
-        return ballots.list[votingId].votes[_group][_user];
+        return ballots.list[_votingId].votes[_group][_user];
     }
 
     /**
-     * @dev get user vote weight
+     * @dev return vote weight of {_user} from {_group} in voting with {_votingId}
+     * @param _votingId id of voting
+     * @param _group address of group
+     * @param _user address of user
+     * @return weigth
      */
     function getUserVoteWeight(
-        uint votingId,
+        uint _votingId,
         address _group,
         address _user
     ) 
@@ -193,13 +218,14 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         view
         returns (uint256 weight)
     {
-
-        return ballots.list[votingId].votesWeight[_group][_user];
+        return ballots.list[_votingId].votesWeight[_group][_user];
     }
 
 
     /**
-     * @dev returns confirming that this user is voted
+     * @dev returns confirming that this {_user} from {_group} is voted
+     * @param _group address of group
+     * @param _user address of user
      * @return confirm
      */
      function isUserVoted (

@@ -16,12 +16,13 @@ library BallotType {
         uint endTime;
         uint starterGroupId;
         address starterAddress;
-        uint questionId;
+        uint questionId; 
         BallotStatus status;
         BallotResult result;
         bytes votingData;
         mapping(address => mapping(address => BallotResult)) votes;
         mapping(address => mapping(address => uint256)) votesWeight;
+        mapping(address => mapping(uint => uint256)) descisionWeights;
     }
 
     /**
@@ -81,6 +82,8 @@ library BallotType {
     {
         _self.votes[_group][_user] = _descision;
         _self.votesWeight[_group][_user] = _voteWeight;
+        _self.descisionWeights[_group][uint(_descision)] = _self.descisionWeights[_group][uint(_descision)] + _voteWeight;
+
         return true;
     }
 
