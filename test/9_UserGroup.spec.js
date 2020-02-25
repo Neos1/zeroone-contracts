@@ -89,5 +89,4 @@ contract('UserGroupMock', (accounts) => {
       assert.strictEqual(error, true);
     });
   });
-
 });

@@ -89,5 +89,4 @@ contract('UserGroups', (accounts) => {
       assert.strictEqual(name, group.name);
     });
   });
-
 });
