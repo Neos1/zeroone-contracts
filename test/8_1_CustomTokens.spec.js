@@ -132,12 +132,16 @@ contract('CustomToken', (accounts) => {
     });
 
     it('should fail on lock tokens for project when balance is zero', async () => {
+      let error = false;
+
       await token.addToProjects(zeroOne.address);
       try {
         await zeroOne.setVote(token.address, secondary, 1);
       } catch ({ message }) {
+        error = true;
         assert.strictEqual(message, getErrorMessage('Balance of sender must be greater, then zero'))
       }
+      assert.strictEqual(error, true);
     });
 
     it('should fail on send tokens between users, when TX sender not owner or project', async () => {
@@ -149,7 +153,7 @@ contract('CustomToken', (accounts) => {
         error = true;
         assert.strictEqual(message, getErrorMessage('This operation is not allowed for this address'));
       }
-      assert.strictEqual(error, true)
+      assert.strictEqual(error, true);
     });
   });
 
