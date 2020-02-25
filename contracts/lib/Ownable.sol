@@ -1,5 +1,12 @@
 pragma solidity 0.6.1;
 
+
+/**
+ * @notice Modified version of openZeppelin/Ownable
+ * 1. Removed renounceOwnership for preventing removing owner of contract
+ * 2. transferOwnership method moved to CustomToken 
+ */
+
 /**
  * @dev Contract module which provides a basic access control mechanism, where
  * there is an account (an owner) that can be granted exclusive access to

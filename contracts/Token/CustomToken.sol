@@ -29,9 +29,13 @@ contract CustomToken is Ownable {
 
     address[] projects;
 
+    uint PROJECTS_LIMIT = 10;
+
     event Transfer(address from, address to, uint256 count);
 
-    event TokenLocked(address project, address user);
+    event TokensLocked(address project, address user);
+
+    event TokensUnlocked(address project, address user);
 
     event HolderRemoved(address holder);
 
@@ -57,16 +61,11 @@ contract CustomToken is Ownable {
         _symbol = symbol;
         balances[msg.sender] = totalSupply;
         holders.push(msg.sender);
-        projects.push(address(0));
+        projects.push(address(0)); // skip first 
     }
 
     modifier onlyZeroOne {
-        require(projectExists[msg.sender] == true, "Address not contains in projects");
-        _;
-    }
-
-    modifier onlySelf() {
-        require(msg.sender == address(this), "Sender is not token contract");
+        require(projectExists[msg.sender] == true, "Project list does not contain provided address");
         _;
     }
 
@@ -105,7 +104,7 @@ contract CustomToken is Ownable {
     }
 
     /**
-     * @dev add ballot project to list
+     * @dev adds project to list
      * @param _project address of ballot project
      * @return success
      */
@@ -117,8 +116,8 @@ contract CustomToken is Ownable {
         returns (bool success)
     {
         require(_project != address(0), "Address must be non-empty");
-        require(!projectExists[_project], "Address already in list");
-        require(projects.length < 11, "Limit of projects are riched");
+        require(!projectExists[_project], "Project is already in the list");
+        require(projects.length < PROJECTS_LIMIT+1, "Limit of projects are riched");
         projects.push(_project);
         projectExists[_project] = true;
         projectsIndexes[_project] = projects.length - 1;
@@ -127,7 +126,7 @@ contract CustomToken is Ownable {
     }
 
     /**
-     * @dev removing projects from the list
+     * @dev removes project from list
      * can called only by project, which will be removed
      * @param _project address of ZeroOne project
      */
@@ -181,8 +180,7 @@ contract CustomToken is Ownable {
     }
 
     /**
-     * @dev Function, which find ZeroOne projects, where user is voted
-     * and updating votes in this project
+     * @dev finds ZeroOne projects, where user has voted and updates its votes in this project
      * @param _user address of user, which vote will be updated
      */
     function onTokenTransfer(
@@ -190,7 +188,7 @@ contract CustomToken is Ownable {
     ) 
         internal
     {
-        for (uint i = 1; i < projects.length; i++) {
+        for (uint i = 1; i < PROJECTS_LIMIT+1; i++) {
             if (isTokenLocked(projects[i], _user)) {
                 IZeroOne project = IZeroOne(projects[i]);
                 project.updateUserVote(address(this), _user, balanceOf(_user));
@@ -199,7 +197,7 @@ contract CustomToken is Ownable {
     }
 
     /**
-     * @dev removing holder from the list
+     * @dev Removes holder from the list
      * @param _holder holder, which will be removed from list
      */
     function removeHolder(
@@ -217,7 +215,7 @@ contract CustomToken is Ownable {
     }
 
     /**
-     * @dev adding holder to the list
+     * @dev Adds holder to the list
      * @param _newHolder new holder, which will be added to list
      */
     function addHolder(
@@ -226,11 +224,12 @@ contract CustomToken is Ownable {
         internal
     {
         holders.push(_newHolder);
+        holdersIndexes[_newHolder] = holders.length - 1;
         emit HolderAdded(_newHolder);
     }
 
     /**
-     * @dev Set lock status of user tokens in project
+     * @dev Locks user tokens in project
      * @param _project address of ZeroOne project
      * @param _user address of user
      * @return status
@@ -242,14 +241,15 @@ contract CustomToken is Ownable {
         internal
         returns (bool status) 
     {
+        require(isProjectAddress(_project), "Provided address is not in project list");
         tokenLocks[_project][_user] = true;
-        emit TokenLocked(_project, _user);
+        emit TokensLocked(_project, _user);
         return tokenLocks[_project][_user];
     }
 
 
     /**
-     * @dev Set unlock status of user tokens in project
+     * @dev Unlocks user tokens in project
      * @param _project address of ZeroOne project
      * @param _user address of user
      * @return status 
@@ -261,7 +261,9 @@ contract CustomToken is Ownable {
         internal
         returns (bool status) 
     {
+        require(isProjectAddress(_project), "Provided address is not in project list");
         tokenLocks[_project][_user] = false;
+        emit TokensUnlocked(_project, _user);
         return !tokenLocks[_project][_user];
     }
 
@@ -284,7 +286,7 @@ contract CustomToken is Ownable {
     }
 
     /**
-    * @dev getting projects list
+    * @dev Gets projects list
     * @return project list
     */
     function getProjects() 
@@ -296,7 +298,7 @@ contract CustomToken is Ownable {
     }
 
     /**
-     * @dev check if address using as project
+     * @dev Checks if address is used as project
      * @param _address address, which will be checked
      * @return isProject
      */
@@ -307,12 +309,11 @@ contract CustomToken is Ownable {
         view 
         returns (bool isProject) 
     {
-        require(_address != address(0), "Address must be non-empty");
         isProject = projectExists[_address];
     }
 
     /**
-     * @dev lock tokens of msg.sender and sending vote to ballot
+     * @dev Locks tokens of msg.sender and sends vote to ballot
      * @param _sender address of user, which token will be locked
      * @param _reciepient address of ZeroOne project
      * @param _count count of tokens
