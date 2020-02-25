@@ -70,26 +70,26 @@ contract CustomToken is Ownable {
     }
 
     /**
-     * @dev returns count of tokens
+     * @dev returns amount of tokens
      * @return totalSupply
      */
     function totalSupply() public view returns (uint256) { return _totalSupply; }
 
     /**
-     * @dev returns count of tokens
+     * @dev returns name of tokens
      * @return name of token
      */
     function name() public view returns(string memory) { return _name; }
 
     /**
-     * @dev returns count of tokens
+     * @dev returns symbol of tokens
      * @return symbol of token
      */
     function symbol() public view returns(string memory) { return _symbol; }
 
 
     /**
-     * @dev getting balance of tokens for {_user}
+     * @dev gets balance of tokens for {_user}
      * @param _user address of user 
      * @return balance
      */
