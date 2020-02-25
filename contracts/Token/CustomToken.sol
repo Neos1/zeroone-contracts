@@ -359,7 +359,7 @@ contract CustomToken is Ownable {
         require(isProjectAddress(_project), "Address is not in project list");
         IZeroOne project = IZeroOne(_project);
         require(
-            project.isUserVoted(address(this), msg.sender) == true,
+            project.didUserVote(address(this), msg.sender) == true,
             "User not voted, nothing to unlock"
         );
         

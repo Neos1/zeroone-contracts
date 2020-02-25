@@ -142,6 +142,23 @@ contract('CustomToken', (accounts) => {
       assert.strictEqual(balance.toNumber(), 300)
     });
 
+    it('should successfully keep admin priveledges, if admin send all of tokens to users', async () => {
+      const admin = from;
+      const tx = await token.transferFrom(admin, secondary, 1000)
+      const log = tx.logs.find(element => element.event.match('HolderRemoved'));
+      const {args: {holder}} = log;
+      assert.strictEqual(holder, admin); // check, if admin removed from holders list
+
+      let adminBalance = await token.balanceOf(admin)
+      const groupAdmin = await token.owner();
+      assert.strictEqual(groupAdmin, admin); // check group adminstrator
+      assert.strictEqual(adminBalance.toNumber(), 0); // check group adminstrator balance
+
+      await token.transferFrom(secondary, admin, 300); // trying transfer from user to admin
+      adminBalance = await token.balanceOf(admin);
+      assert.strictEqual(adminBalance.toNumber(), 300); // check group adminstrator balance again
+    });
+
     it('should fail on tranfer tokens, which count greater, then sender balance', async () => {
       let error = false;
       try {
@@ -237,7 +254,7 @@ contract('CustomToken', (accounts) => {
       await zeroOne.setVote(token.address, from, 1);
       increase(web3, 3200000);
 
-      await zeroOne.closeVoting();
+      await zeroOne.submitVoting();
       await token.revoke(zeroOne.address);
 
       const isLocked =  await token.isTokenLocked(zeroOne.address, from);

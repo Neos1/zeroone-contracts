@@ -126,7 +126,7 @@ contract ZeroOne is Notifier, IZeroOne {
        return ballot.votesWeight[tokenAddr][user];
     }
 
-    function isUserVoted(address tokenAddr, address user)
+    function didUserVote(address tokenAddr, address user)
         public 
         override 
         returns(bool)
@@ -134,7 +134,7 @@ contract ZeroOne is Notifier, IZeroOne {
         return ballot.votes[tokenAddr][user] != BallotResult.NOT_ACCEPTED;
     }
 
-    function closeVoting()
+    function submitVoting()
         public
         override
     {

@@ -47,7 +47,7 @@ library UserGroup {
         IERC20 group = IERC20(_group.groupAddress);
         admin = group.owner();
     }
-    
+
     /**
      * @notice validates group
      * @param _group group
