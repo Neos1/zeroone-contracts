@@ -136,6 +136,7 @@ contract CustomToken is Ownable {
         public 
         onlyZeroOne
     {
+        require(isProjectAddress(_project), "Provided address is not in projects list");
         uint index = projectsIndexes[_project];
         address lastProjectInList = projects[projects.length - 1];
 
@@ -188,7 +189,7 @@ contract CustomToken is Ownable {
     ) 
         internal
     {
-        for (uint i = 1; i < PROJECTS_LIMIT+1; i++) {
+        for (uint i = 1; i < projects.length - 1; i++) {
             if (isTokenLocked(projects[i], _user)) {
                 IZeroOne project = IZeroOne(projects[i]);
                 project.updateUserVote(address(this), _user, balanceOf(_user));
@@ -242,6 +243,7 @@ contract CustomToken is Ownable {
         returns (bool status) 
     {
         require(isProjectAddress(_project), "Provided address is not in project list");
+        require(!tokenLocks[_project][_user], "Tokens in this project is already locked");
         tokenLocks[_project][_user] = true;
         emit TokensLocked(_project, _user);
         return tokenLocks[_project][_user];
