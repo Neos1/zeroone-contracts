@@ -116,7 +116,6 @@ contract('QuestionsWithGroups', (accounts) => {
             assert.strictEqual(name, group.name);
         })
     })
-
     // after user groups, owner functionality are implemented
     // 4. test question upload from owners, non-owners, etc. 
 });
