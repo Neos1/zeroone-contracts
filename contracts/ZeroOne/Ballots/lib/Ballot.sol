@@ -1,11 +1,16 @@
 pragma solidity 0.6.1;
 
+import "../../../__vendor__/IERC20.sol";
+import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
+
 /**
   @title BallotType
   @dev Ballot data type implementation
 */
 
 library BallotType {
+    using ZeroOneVM for ZeroOneVM.Ballot;
+
     enum BallotStatus { CLOSED, ACTIVE }
 
     enum BallotResult { NOT_ACCEPTED, POSITIVE, NEGATIVE }
@@ -18,7 +23,6 @@ library BallotType {
         address starterAddress;
         uint questionId; 
         BallotStatus status;
-        BallotResult result;
         bytes votingData;
         mapping(address => mapping(address => BallotResult)) votes;
         mapping(address => mapping(address => uint256)) votesWeight;
@@ -33,7 +37,6 @@ library BallotType {
      * @return starterAddress
      * @return questionId
      * @return status
-     * @return result
      * @return votingData
      */
     function getPrimaryInfo(
@@ -48,7 +51,6 @@ library BallotType {
             address starterAddress,
             uint questionId,
             BallotStatus status,
-            BallotResult result,
             bytes storage votingData
         )
     {
@@ -59,7 +61,6 @@ library BallotType {
             _self.starterAddress,
             _self.questionId,
             _self.status,
-            _self.result,
             _self.votingData
         );
     }
@@ -74,16 +75,48 @@ library BallotType {
         Ballot storage _self,
         address _group,
         address _user,
-        BallotResult _descision,
-        uint256 _voteWeight
+        BallotResult _descision
+    )
+        internal
+        returns (bool status)
+    {        
+        require(_self.endTime > block.timestamp, "Votes recieving are closed");
+        require(
+            _self.status != BallotStatus.CLOSED, 
+            "Voting is closed, you must start new voting before vote"
+        );
+
+        IERC20 group = IERC20(_group);
+        uint256 voteWeight = group.balanceOf(_user);
+        require(group.transferFrom(_user, address(this), voteWeight));
+
+        _self.votes[_group][_user] = _descision;
+        _self.votesWeight[_group][_user] = voteWeight;
+        _self.descisionWeights[_group][uint(_descision)] = _self.descisionWeights[_group][uint(_descision)] + voteWeight;
+
+        return true;
+    }
+
+    function updateUserVote(
+        Ballot storage _self,
+        address _group,
+        address _user,
+        uint256 _newVoteWeight
     )
         internal
         returns (bool status)
     {
-        _self.votes[_group][_user] = _descision;
-        _self.votesWeight[_group][_user] = _voteWeight;
-        _self.descisionWeights[_group][uint(_descision)] = _self.descisionWeights[_group][uint(_descision)] + _voteWeight;
+        uint256 oldVoteWeight = _self.votesWeight[_group][_user];
+        uint index = uint(_self.votes[_group][_user]);
+        uint256 oldDescisionWeight = _self.descisionWeights[_group][index];
 
+        if (_self.status == BallotStatus.ACTIVE) {
+            _self.votesWeight[_group][_user] = _newVoteWeight;
+            _self.descisionWeights[_group][index] = oldDescisionWeight - oldVoteWeight + _newVoteWeight;
+            if (_newVoteWeight == 0) {
+                _self.votes[_group][_user] = BallotResult.NOT_ACCEPTED;
+            }
+        }
         return true;
     }
 
@@ -123,19 +156,16 @@ library BallotType {
 
     /**
      * @dev set result and status "Closed" to voting
-     * @param _result calculated result of voting
      * @return success
      */
     function setResult(
-        Ballot storage _self,
-        BallotResult _result
+        Ballot storage _self
     )
         internal
         returns (bool success)
     {
         require(setStatus(_self, BallotStatus.CLOSED), "Problem with setting status");
-        _self.result = _result;
-        return _self.result == _result;
+        return true;
     }
 
     /**
@@ -161,7 +191,7 @@ library BallotType {
         returns (BallotResult result)
     {
         BallotResult _result = calculateResult();
-        setResult(_self, _result);
+        setResult(_self);
         return _result;
     }
 

@@ -16,7 +16,9 @@
   "dependencies": {
     "solc": "^0.6.1",
     "solidity-bytes-utils": "0.0.6",
-    "truffle": "^5.1.8"
+    "truffle": "^5.1.8",
+    "zeroone-translator": "github:Neos1/zeroone-translator#master",
+    "zeroone-voting-vm": "github:Neos1/zeroone-voting-vm#master"
   },
   "devDependencies": {
     "@neos1/truffle-plugin-docs": "^1.2.4"

@@ -25,6 +25,7 @@ module.exports = {
       "string[]",
       "string[]"
     ],
+    rawFormula: "erc20{%s}->conditions{quorum>50%, positive>50% of all}"
   },
   {
     groupId: 0,
@@ -42,6 +43,7 @@ module.exports = {
       "address",
       "string"
     ],
+    rawFormula: "erc20{%s}->conditions{quorum>50%, positive>50% of all}"
   },
   {
     groupId: 0,
@@ -55,6 +57,7 @@ module.exports = {
     paramTypes: [
       "string"
     ],
+    rawFormula: "erc20{%s}->conditions{quorum>50%, positive>50% of all}"
   },
   {
     groupId: 0,
@@ -70,5 +73,6 @@ module.exports = {
       "address",
       "address"
     ],
+    rawFormula: "erc20{%s}->conditions{quorum>50%, positive>50% of all}"
   }]
 }

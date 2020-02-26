@@ -1,6 +1,8 @@
 pragma solidity 0.6.1;
 
 import "./Ballot.sol";
+import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
+
 
 /**
  * @title BallotList
@@ -11,6 +13,7 @@ library BallotList {
 
     struct List {
         BallotType.Ballot[] list;
+        mapping(uint => ZeroOneVM.Ballot) descriptors;
     }
 
     struct BallotSimple {
@@ -33,20 +36,19 @@ library BallotList {
         internal
         returns (uint id)
     {
-        BallotType.Ballot memory _voting = BallotType.Ballot({
-            startBlock: block.number,
-            startTime: block.timestamp,
-            endTime: _votingPrimary.endTime,
-            starterGroupId: _votingPrimary.starterGroupId,
-            starterAddress: _votingPrimary.starterAddress,
-            questionId: _votingPrimary.questionId,
-            status: BallotType.BallotStatus.ACTIVE,
-            result: BallotType.BallotResult.NOT_ACCEPTED,
-            votingData: _votingPrimary.data
-        });
+        BallotType.Ballot memory _voting = BallotType.Ballot(
+            block.number,
+            block.timestamp,
+            _votingPrimary.endTime,
+            _votingPrimary.starterGroupId,
+            _votingPrimary.starterAddress,
+            _votingPrimary.questionId,
+            BallotType.BallotStatus.ACTIVE,
+            _votingPrimary.data
+        );
 
         _self.list.push(_voting);
-        return _self.list.length - 1;
+        id = _self.list.length - 1;
     }
 
 

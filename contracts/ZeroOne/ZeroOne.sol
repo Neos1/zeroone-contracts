@@ -7,7 +7,6 @@ import "../lib/Meta.sol";
 import "./Ballots/Ballots.sol";
 
 
-
 /**
  * @title ZeroOne
  * @dev main ZeroOne contract
@@ -34,7 +33,7 @@ contract ZeroOne is Notifier, IZeroOne, Ballots {
      * @dev closes last voting in list
      * @return descision
      */
-    function closeVoting() 
+    function submitVoting() 
         public
         returns (
             BallotType.BallotResult descision
@@ -153,82 +152,16 @@ contract ZeroOne is Notifier, IZeroOne, Ballots {
         address _group,
         address _user
     )
-        public
+        internal
         onlySelf()
         returns(uint ballotId)
     {
-        _group.call(abi.encodeWithSignature("setAdmin(address)", _user));
+        _group.call(abi.encodeWithSignature("transferOwnership(address)", _user));
         emit ZeroOneCall(_metaData);
         return _metaData.ballotId;
     }
-}
-    function setVote(address tokenAddr, address user, BallotResult descision) public returns (BallotResult) {
-        IERC20 token = IERC20(tokenAddr);
-        uint256 tokenBalance = token.balanceOf(user);
-        require(token.transferFrom(user, address(this), tokenBalance));
-        ballot.votes[tokenAddr][user] = descision;
-        ballot.votesWeight[tokenAddr][user] = tokenBalance;
-    }
 
-    function updateUserVote(address tokenAddr, address user, uint256 newVoteWeight) public override returns(bool){
-        uint256 oldVoteWeight = ballot.votesWeight[tokenAddr][user];
-        uint index = uint(ballot.votes[tokenAddr][user]);
-        uint256 oldDescisionWeight = ballot.descisionWeights[tokenAddr][index];
-
-        if (ballot.status == BallotStatus.ACTIVE) {
-            ballot.votesWeight[tokenAddr][user] = newVoteWeight;
-            ballot.descisionWeights[tokenAddr][index] = oldDescisionWeight - oldVoteWeight + newVoteWeight;
-            if (newVoteWeight == 0) {
-                ballot.votes[tokenAddr][user] = BallotResult.NOT_ACCEPTED;
-            }
-        }
-    }
-
-    function getUserVote(address tokenAddr, address user) 
-        public 
-        view
-        override
-        returns(uint)
-    {
-        return uint(ballot.votes[tokenAddr][user]);
-    }
-
-    function getUserVoteWeight(address tokenAddr, address user) 
-        public 
-        view
-        override
-        returns(uint256)
-    {
-       return ballot.votesWeight[tokenAddr][user];
-    }
-
-    function didUserVote(address tokenAddr, address user)
-        public 
-        override 
-        returns(bool)
-    {
-        return ballot.votes[tokenAddr][user] != BallotResult.NOT_ACCEPTED;
-    }
-
-    function submitVoting()
-        public
-        override
-    {
-        require(block.timestamp > ballot.endTime, "Time is not over");
-        ballot.status = BallotStatus.CLOSED;
-    }
-
-    function setGroupAdmin(
-        address tokenAddr, 
-        address newOwner
-    )
-        public
-        override 
-    {
-        tokenAddr.call(abi.encodeWithSignature("transferOwnership(address)", newOwner));
-    }
-
-    function disableUserGroup(address tokenAddr) public {
+    function disableUserGroup(address tokenAddr) internal {
         tokenAddr.call(abi.encodeWithSignature("removeFromProjects(address)", address(this)));
 
     }

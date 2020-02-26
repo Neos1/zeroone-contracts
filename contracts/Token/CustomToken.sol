@@ -2,7 +2,7 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "../lib/Ownable.sol";
-import "../ZeroOne/IZeroOne.sol";
+import "../ZeroOne/Ballots/IBallots.sol";
 
 /**
  * @title CustomToken
@@ -191,7 +191,7 @@ contract CustomToken is Ownable {
     {
         for (uint i = 1; i < projects.length - 1; i++) {
             if (isTokenLocked(projects[i], _user)) {
-                IZeroOne project = IZeroOne(projects[i]);
+                IBallots project = IBallots(projects[i]);
                 project.updateUserVote(address(this), _user, balanceOf(_user));
             }
         }
@@ -357,7 +357,7 @@ contract CustomToken is Ownable {
         returns(bool isUnlocked)
     {
         require(isProjectAddress(_project), "Address is not in project list");
-        IZeroOne project = IZeroOne(_project);
+        IBallots project = IBallots(_project);
         require(
             project.didUserVote(address(this), msg.sender) == true,
             "User not voted, nothing to unlock"

@@ -5,7 +5,9 @@ import "./lib/Ballot.sol";
 import "./lib/BallotList.sol";
 import "../Questions/QuestionsWithGroups.sol";
 import "../UserGroups/UserGroups.sol";
-import "../../__vendor__/IERC20.sol";
+import "./IBallots.sol";
+import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
+
 
 /**
  * @title Ballots
@@ -14,6 +16,7 @@ import "../../__vendor__/IERC20.sol";
 contract Ballots is QuestionsWithGroups, UserGroups {
     using BallotList for BallotList.List;
     using BallotType for BallotType.Ballot;
+    using ZeroOneVM for ZeroOneVM.Ballot;
 
     BallotList.List ballots;
 
@@ -23,6 +26,8 @@ contract Ballots is QuestionsWithGroups, UserGroups {
     event VotingEnded(uint votingId, BallotType.BallotResult descision);
 
     event UserVote(address group, address user, BallotType.BallotResult descision);
+
+    event UpdatedUserVote(address group, address user);
 
     /**
      * @notice reverts on non-existing ballot id
@@ -98,6 +103,10 @@ contract Ballots is QuestionsWithGroups, UserGroups {
     {
         _votingPrimary.endTime = block.timestamp + questions.list[_votingPrimary.questionId].timeLimit;
         id = ballots.add(_votingPrimary);
+        ballots.descriptors[id].executeDescriptors(
+            questions.list[_votingPrimary.questionId].formula,
+            groups.list[0].groupAddress
+        );
         emit VotingStarted(id, _votingPrimary.questionId);
     }
 
@@ -110,7 +119,6 @@ contract Ballots is QuestionsWithGroups, UserGroups {
      * @return starterAddress
      * @return questionId
      * @return status
-     * @return result
      * @return votingData
      */
     function getVoting(
@@ -126,7 +134,6 @@ contract Ballots is QuestionsWithGroups, UserGroups {
             address starterAddress,
             uint questionId,
             BallotType.BallotStatus status,
-            BallotType.BallotResult result,
             bytes memory votingData
         )
     {
@@ -166,20 +173,33 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         returns (bool success)
     {
         uint votingId = ballots.list.length - 1;
-        require(ballots.list[votingId].endTime > block.timestamp, "Votes recieving are closed");
-        require(
-            ballots.list[votingId].status != BallotType.BallotStatus.CLOSED, 
-            "Voting is closed, you must start new voting before vote"
-        );
 
-        IERC20 group = IERC20(_group);
-        uint256 voteWeight = group.balanceOf(_user);
-        group.transferFrom(_user, address(this), voteWeight);
-        ballots.list[votingId].setVote(_group, _user, _descision, voteWeight);
+        for (uint i = 0; i < 16; i++) {
+            if (ballots.descriptors[votingId].groups[i].groupAddress == _group) {
+                
+            }
+        }
+
         emit UserVote(_group, _user, _descision);
         return true;
     }
 
+    /**
+     * @dev updates vote weight of {_user} from {_group} with {_newVoteWeight}
+     * calls when admin transfer tokens between users in custom token contract 
+     * @param _group address of group
+     * @param _user address of user
+     * @param _newVoteWeight new vote weight of {_user}
+     * @return status
+     */
+    function updateUserVote(address _group, address _user, uint256 _newVoteWeight)
+        public  
+        returns(bool status)
+    {
+        uint votingId = ballots.list.length - 1;
+        status = ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
+        emit UpdatedUserVote(_group, _user);
+    }
 
     /**
      * @dev returns descision of {_user} from {_group} in voting with {_votingId}
@@ -207,7 +227,7 @@ contract Ballots is QuestionsWithGroups, UserGroups {
      * @param _votingId id of voting
      * @param _group address of group
      * @param _user address of user
-     * @return weigth
+     * @return weight
      */
     function getUserVoteWeight(
         uint _votingId,
@@ -221,14 +241,13 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         return ballots.list[_votingId].votesWeight[_group][_user];
     }
 
-
     /**
      * @dev returns confirming that this {_user} from {_group} is voted
      * @param _group address of group
      * @param _user address of user
      * @return confirm
      */
-     function isUserVoted (
+     function didUserVote (
          address _group,
          address _user
      )
