@@ -5,6 +5,7 @@ import "./IZeroOne.sol";
 import "./Notifier/Notifier.sol";
 import "../lib/Meta.sol";
 import "./Ballots/Ballots.sol";
+import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
 
 
 /**
@@ -17,6 +18,10 @@ contract ZeroOne is Notifier, IZeroOne, Ballots {
     event ZeroOneCall(
         MetaData _meta
     );
+
+    constructor(UserGroup.Group memory _group) public {
+        addUserGroup(_group);
+    }
 
     /**
      * @notice for modified functions allows only self external call
@@ -36,7 +41,7 @@ contract ZeroOne is Notifier, IZeroOne, Ballots {
     function submitVoting() 
         public
         returns (
-            BallotType.BallotResult descision
+            VM.Vote descision
         )
     {
         uint votingId = ballots.list.length - 1;

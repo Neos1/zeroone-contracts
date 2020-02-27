@@ -19,7 +19,7 @@ contract UserGroups {
         string name,
         address groupAddress
     );
-
+    
     /**
      * @notice reverts on non-existing group id
      * @param _id group id

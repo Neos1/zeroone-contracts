@@ -24,7 +24,7 @@ library BallotType {
         uint questionId; 
         BallotStatus status;
         bytes votingData;
-        mapping(address => mapping(address => BallotResult)) votes;
+        mapping(address => mapping(address => VM.Vote)) votes;
         mapping(address => mapping(address => uint256)) votesWeight;
         mapping(address => mapping(uint => uint256)) descisionWeights;
     }
@@ -75,7 +75,7 @@ library BallotType {
         Ballot storage _self,
         address _group,
         address _user,
-        BallotResult _descision
+        VM.Vote _descision
     )
         internal
         returns (bool status)
@@ -93,7 +93,6 @@ library BallotType {
         _self.votes[_group][_user] = _descision;
         _self.votesWeight[_group][_user] = voteWeight;
         _self.descisionWeights[_group][uint(_descision)] = _self.descisionWeights[_group][uint(_descision)] + voteWeight;
-
         return true;
     }
 
@@ -114,10 +113,27 @@ library BallotType {
             _self.votesWeight[_group][_user] = _newVoteWeight;
             _self.descisionWeights[_group][index] = oldDescisionWeight - oldVoteWeight + _newVoteWeight;
             if (_newVoteWeight == 0) {
-                _self.votes[_group][_user] = BallotResult.NOT_ACCEPTED;
+                _self.votes[_group][_user] = VM.Vote.UNDEFINED;
             }
         }
         return true;
+    }
+
+    function getGroupVotes(
+        Ballot storage _self,
+        address _group
+    )
+        internal 
+        view
+        returns(
+            uint256 positive,
+            uint256 negative,
+            uint256 totalSupply
+        ) 
+    {
+        positive = _self.descisionWeights[_group][uint(VM.Vote.ACCEPTED)];
+        negative = _self.descisionWeights[_group][uint(VM.Vote.DECLINED)];
+        totalSupply = IERC20(_group).totalSupply();
     }
 
     /**
@@ -133,7 +149,7 @@ library BallotType {
     )
         internal
         view
-        returns (BallotResult userVote) 
+        returns (VM.Vote userVote) 
     {
         userVote = _self.votes[_group][_user];
     }
@@ -175,9 +191,9 @@ library BallotType {
     function calculateResult()
         internal
         pure
-        returns (BallotResult)
+        returns (VM.Vote)
     {
-        return BallotResult.POSITIVE;
+        return VM.Vote.ACCEPTED;
     }
 
     /**
@@ -188,9 +204,9 @@ library BallotType {
         Ballot storage _self
     )
         internal
-        returns (BallotResult result)
+        returns (VM.Vote result)
     {
-        BallotResult _result = calculateResult();
+        VM.Vote _result = calculateResult();
         setResult(_self);
         return _result;
     }

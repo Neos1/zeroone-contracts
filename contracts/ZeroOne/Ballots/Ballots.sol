@@ -6,6 +6,7 @@ import "./lib/BallotList.sol";
 import "../Questions/QuestionsWithGroups.sol";
 import "../UserGroups/UserGroups.sol";
 import "./IBallots.sol";
+import "../../__vendor__/IERC20.sol";
 import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
 
 
@@ -14,6 +15,7 @@ import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
  * @dev stores Ballots
  */
 contract Ballots is QuestionsWithGroups, UserGroups {
+
     using BallotList for BallotList.List;
     using BallotType for BallotType.Ballot;
     using ZeroOneVM for ZeroOneVM.Ballot;
@@ -23,9 +25,9 @@ contract Ballots is QuestionsWithGroups, UserGroups {
 
     event VotingStarted(uint votingId, uint questionId);
 
-    event VotingEnded(uint votingId, BallotType.BallotResult descision);
+    event VotingEnded(uint votingId, VM.Vote descision);
 
-    event UserVote(address group, address user, BallotType.BallotResult descision);
+    event UserVote(address user, VM.Vote descision);
 
     event UpdatedUserVote(address group, address user);
 
@@ -53,19 +55,6 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         _;
     }
 
-    modifier userNotVoted(
-        address _group,
-        address _user
-    ) {
-        uint _id = ballots.list.length - 1;
-
-        require(
-            ballots.list[_id].votes[_group][_user] == BallotType.BallotResult.NOT_ACCEPTED,
-            "User already vote"
-        );
-        _;
-    }
-
     modifier groupIsAllowed(
         uint _questionId,
         uint _groupId
@@ -77,7 +66,6 @@ contract Ballots is QuestionsWithGroups, UserGroups {
          );
         _;
     }
-    constructor() public {}
 
     /**
      * @dev returns the confirmation that this is a project
@@ -155,50 +143,130 @@ contract Ballots is QuestionsWithGroups, UserGroups {
     /**
      * @dev set {_descision} of {_user} from {_group}
      * method fetching balance of {_user} in {_group} and writing vote in voting struct
-     * @param _group address of group
-     * @param _user address of user
      * @param _descision descision of {_user}
      * @return success
      */
     function setVote(
-        address _group,
-        address _user,
-        BallotType.BallotResult _descision
+        VM.Vote _descision
     ) 
         public
-        userNotVoted(
-            _group,
-            _user
-        )
         returns (bool success)
     {
         uint votingId = ballots.list.length - 1;
 
         for (uint i = 0; i < 16; i++) {
-            if (ballots.descriptors[votingId].groups[i].groupAddress == _group) {
-                
+            DescriptorVM.Group storage group = ballots.descriptors[votingId].groups[i];
+            DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
+            if (group.groupAddress != address(0)) {
+                bool excluded = isUserExcluded(group.exclude, msg.sender);
+                if (!excluded) {
+                    bool userVoted = didUserVote(group.groupAddress, msg.sender);
+                    if (!userVoted) {
+                        ballots.list[votingId].setVote(group.groupAddress, msg.sender, _descision);
+                        (uint256 positive, uint256 negative, uint256 totalSupply) = ballots.list[votingId].getGroupVotes(group.groupAddress);
+                        group.positive = positive;
+                        group.negative = negative;
+                        group.totalSupply = totalSupply;
+                    }
+                }
+            }
+
+            if (user.groupAddress != address(0)) {
+                bool userVoted = didUserVote(user.groupAddress, msg.sender);
+                if (!userVoted) {
+                    ballots.list[votingId].setVote(user.groupAddress, msg.sender, _descision);
+                }
             }
         }
 
-        emit UserVote(_group, _user, _descision);
+        emit UserVote(msg.sender, _descision);
         return true;
     }
 
-    /**
-     * @dev updates vote weight of {_user} from {_group} with {_newVoteWeight}
-     * calls when admin transfer tokens between users in custom token contract 
-     * @param _group address of group
-     * @param _user address of user
-     * @param _newVoteWeight new vote weight of {_user}
-     * @return status
-     */
-    function updateUserVote(address _group, address _user, uint256 _newVoteWeight)
-        public  
-        returns(bool status)
+    function updateUserVote(
+        address _group,
+        address _user,
+        uint256 _newVoteWeight
+    ) 
+        public
+        returns (bool success)
     {
         uint votingId = ballots.list.length - 1;
-        status = ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
+
+        for (uint i = 0; i < 16; i++) {
+            DescriptorVM.Group storage group = ballots.descriptors[votingId].groups[i];
+            DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
+            if ((group.groupAddress != address(0) && (group.groupAddress == _group))) {
+                bool excluded = isUserExcluded(group.exclude, _user);
+                if (!excluded) {
+                    bool userVoted = didUserVote(group.groupAddress, msg.sender);
+                    if (!userVoted) {   
+                        ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
+                        (uint256 positive, uint256 negative, uint256 totalSupply) = ballots.list[votingId].getGroupVotes(group.groupAddress);
+                        group.positive = positive;
+                        group.negative = negative;
+                        group.totalSupply = totalSupply;
+                    }
+                }
+            }
+
+            if ((user.groupAddress != address(0)) && (user.groupAddress == _group)) {
+                bool userVoted = didUserVote(user.groupAddress, _user);
+                if (!userVoted) {
+                    ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
+                    if (_newVoteWeight == 0) {
+                        user.vote = VM.Vote.UNDEFINED;
+                    }
+                }
+            }
+        }
         emit UpdatedUserVote(_group, _user);
+        return true;
+    }   
+
+    /**
+     * @dev gets votes from voting with {_votingId} for {_group}
+     * returns positive votes, negative votes, totalSupply of {_group}
+     * @param _votingId id of voting
+     * @param _group address of group
+     * @return positive
+     * @return negative
+     * @return totalSupply
+     */
+    function getGroupVotes(
+        uint _votingId,
+        address _group
+    )
+      public
+      view
+      returns (
+          uint256 positive,
+          uint256 negative,
+          uint256 totalSupply
+      )
+    {
+        (positive, negative, totalSupply) = ballots.list[_votingId].getGroupVotes(_group);
+    }
+
+    /**
+     * @dev checks, if {_user} address contains in {_exclude} list
+     * @param _exclude list of users, which excluded from voting
+     * @param _user user, which votes
+     */
+    function isUserExcluded(
+        address[] memory _exclude,
+        address _user
+    )
+        internal
+        pure
+        returns (bool excluded)
+    {
+        for (uint i = 0; i < _exclude.length; i++) {
+            if (_exclude[i] == _user) {
+                excluded = true;
+                break;
+            }
+        }
     }
 
     /**
@@ -216,7 +284,7 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         public
         view
         ballotExist(_votingId)
-        returns (BallotType.BallotResult descision)
+        returns (VM.Vote descision)
     {
 
         return ballots.list[_votingId].votes[_group][_user];
@@ -247,15 +315,21 @@ contract Ballots is QuestionsWithGroups, UserGroups {
      * @param _user address of user
      * @return confirm
      */
-     function didUserVote (
-         address _group,
-         address _user
-     )
+    function didUserVote (
+        address _group,
+        address _user
+    )
         public
         view
         returns(bool confirm)
-     {
+    {
         uint votingId = ballots.list.length - 1;
-        confirm = ballots.list[votingId].votes[_group][_user] != BallotType.BallotResult.NOT_ACCEPTED;
-     }
+        confirm = ballots.list[votingId].votes[_group][_user] != VM.Vote.UNDEFINED;
+    }
+
+    function submitVoting()
+        public
+    {
+        uint votingId = ballots.list.length - 1;
+    }
 }
