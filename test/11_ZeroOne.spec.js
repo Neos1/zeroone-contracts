@@ -1,19 +1,35 @@
-const Controlled = artifacts.require('./ControlledMock.sol');
-const ERC20 = artifacts.require('./ERC20.sol');
 const ZeroOne = artifacts.require('./ZeroOne.sol');
-const BallotType = artifacts.require('./BallotType.sol');
 const ZeroOneVM = artifacts.require('zeroone-voting-vm/contracts/ZeroOneVM.sol');
+const ERC20 = artifacts.require('./ERC20.sol');
+const CustomToken = artifacts.require('./CustomToken.sol');
+
+const Controlled = artifacts.require('./ControlledMock.sol');
+const BallotType = artifacts.require('./BallotType.sol');
 
 const increase = require('./helpers/increase-time');
-const { compile, compileDescriptors } = require('zeroone-translator');
+const { compile } = require('zeroone-translator');
 const { questions } = require('./helpers/questions');
 
 contract('ZeroOne', ([from, secondary]) => {
   let zeroOne;
   let token;
 
+
+  const formulas = [
+    `erc20{${address}}->conditions{quorum>50%, positive=100% of quorum}`,
+    `erc20{${address}}->conditions{quorum>50%, positive>90% of quorum}`,
+    `erc20{${addresses[1]}}->conditions{quorum>50%,positive>90% of quorum} or custom{${address}}->admin`,
+    `erc20{${addresses[1]}}->conditions{quorum>50%,positive>90% of quorum} and custom{${address}}->admin`,
+    `erc20{${address}}->conditions{quorum>30%, positive>50% of all}
+      or (
+          custom{${addresses[0]}}->conditions{quorum>30%, positive>50% of all}
+          and custom{${addresses[0]}}->admin
+      )`
+  ];
+
   beforeEach(async () => {
     token = await ERC20.new('test', 'tst', 1000);
+    customToken = await CustomToken.new('test', 'tst', 1000)
 
     const group = {
       name: "Owners",
@@ -65,8 +81,13 @@ contract('ZeroOne', ([from, secondary]) => {
           await token.approve(zeroOne.address, userBalance);
           await zeroOne.setVote(1);
           increase(web3, 320000);
-          const {positive, negative, totalSupply} = await zeroOne.getGroupVotes(0, token.address);
-          console.log(positive.toNumber(), negative.toNumber(), totalSupply.toNumber());
+          await zeroOne.submitVoting();
+
+          const questionGroupsAmount = await zeroOne.getQuestionGroupsAmount();
+          assert.strictEqual(questionGroupsAmount.toNumber(), 2);
+
+          const questionGroup = await zeroOne.getQuestionGroup(1);
+          assert.strictEqual(questionGroup.name, 'test');
       });
   });
 });

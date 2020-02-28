@@ -157,24 +157,39 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         for (uint i = 0; i < 16; i++) {
             DescriptorVM.Group storage group = ballots.descriptors[votingId].groups[i];
             DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
+            
             if (group.groupAddress != address(0)) {
                 bool excluded = isUserExcluded(group.exclude, msg.sender);
                 if (!excluded) {
                     bool userVoted = didUserVote(group.groupAddress, msg.sender);
                     if (!userVoted) {
                         ballots.list[votingId].setVote(group.groupAddress, msg.sender, _descision);
-                        (uint256 positive, uint256 negative, uint256 totalSupply) = ballots.list[votingId].getGroupVotes(group.groupAddress);
-                        group.positive = positive;
-                        group.negative = negative;
-                        group.totalSupply = totalSupply;
+                        (uint positive, uint negative, uint totalSupply) = ballots.list[votingId].getGroupVotes(group.groupAddress);
+                        ballots.descriptors[votingId].groups[i].positive = positive;
+                        ballots.descriptors[votingId].groups[i].negative = negative;
+                        ballots.descriptors[votingId].groups[i].totalSupply = totalSupply;
                     }
                 }
             }
 
-            if (user.groupAddress != address(0)) {
-                bool userVoted = didUserVote(user.groupAddress, msg.sender);
-                if (!userVoted) {
-                    ballots.list[votingId].setVote(user.groupAddress, msg.sender, _descision);
+            if (user.groupAddress != address(0)) { 
+
+                if((user.userAddress != address(0)) && (user.userAddress == msg.sender)) {
+                    bool userVoted = didUserVote(user.groupAddress, user.userAddress);
+                    if (!userVoted) {
+                        ballots.list[votingId].setVote(user.groupAddress, user.userAddress, _descision);
+                    } else {
+                        user.vote = getUserVote(votingId, group.groupAddress, user.userAddress);
+                    }
+                } else if ( (user.admin == true)  && (IERC20(user.groupAddress).owner() == msg.sender) ) {
+                    user.userAddress = msg.sender;
+                    bool userVoted = didUserVote(user.groupAddress, msg.sender);
+                    if (!userVoted) {
+                        ballots.list[votingId].setVote(user.groupAddress, msg.sender, _descision);
+                        user.vote = _descision;
+                    } else {
+                        user.vote = getUserVote(votingId, group.groupAddress, msg.sender);
+                    }
                 }
             }
         }
@@ -183,6 +198,12 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         return true;
     }
 
+    /**
+     * @dev updates vote of {_user} from {_group} with {_newVoteWeight}
+     * @param _group address of group
+     * @param _user address of user
+     * @param _newVoteWeight new tokens amount of {_user}
+     */
     function updateUserVote(
         address _group,
         address _user,
@@ -200,7 +221,7 @@ contract Ballots is QuestionsWithGroups, UserGroups {
                 bool excluded = isUserExcluded(group.exclude, _user);
                 if (!excluded) {
                     bool userVoted = didUserVote(group.groupAddress, msg.sender);
-                    if (!userVoted) {   
+                    if (userVoted) {   
                         ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
                         (uint256 positive, uint256 negative, uint256 totalSupply) = ballots.list[votingId].getGroupVotes(group.groupAddress);
                         group.positive = positive;
@@ -211,11 +232,21 @@ contract Ballots is QuestionsWithGroups, UserGroups {
             }
 
             if ((user.groupAddress != address(0)) && (user.groupAddress == _group)) {
-                bool userVoted = didUserVote(user.groupAddress, _user);
-                if (!userVoted) {
-                    ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
-                    if (_newVoteWeight == 0) {
-                        user.vote = VM.Vote.UNDEFINED;
+                if((user.userAddress != address(0)) && (user.userAddress == msg.sender)) {
+                    bool userVoted = didUserVote(user.groupAddress, _user);
+                    if (userVoted) {
+                        ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
+                        if (_newVoteWeight == 0) {
+                            user.vote = VM.Vote.UNDEFINED;
+                        }
+                    }
+                } else if ( (user.admin == true)  && (IERC20(user.groupAddress).owner() == msg.sender) ) {
+                    user.userAddress = msg.sender;
+                    bool userVoted = didUserVote(user.groupAddress, msg.sender);
+                    if (userVoted) {
+                        if (_newVoteWeight == 0) {
+                            user.vote = VM.Vote.UNDEFINED;
+                        }
                     }
                 }
             }
@@ -327,9 +358,49 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         confirm = ballots.list[votingId].votes[_group][_user] != VM.Vote.UNDEFINED;
     }
 
-    function submitVoting()
+    /**
+     * @dev closes the voting by executing descriptors for result calculating
+     * and setting BallotStatus.CLOSED
+     * @return votingId
+     * @return questionId
+     * @return result
+     */
+    function closeVoting()
         public
+        returns (
+            uint votingId,
+            uint questionId,
+            VM.Vote result
+        )
     {
-        uint votingId = ballots.list.length - 1;
+        votingId = ballots.list.length - 1;
+        questionId = ballots.list[votingId].questionId;
+
+        require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
+        bytes storage formula = questions.list[questionId].formula;
+        address owners = groups.list[0].groupAddress;
+        ballots.descriptors[votingId].executeResult(formula, owners);
+        ballots.list[votingId].close();
+
+        return (
+            votingId, 
+            questionId,
+            ballots.descriptors[votingId].result
+        );
+    }
+
+    /**
+     * @dev gets voting result by {_votingId}
+     * @param _votingId id of voting
+     * @return result
+     */
+    function getVotingResult (
+        uint _votingId
+    )
+        public
+        view
+        returns (VM.Vote result)
+    {
+        result = ballots.descriptors[_votingId].result;
     }
 }

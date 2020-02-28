@@ -36,34 +36,33 @@ contract ZeroOne is Notifier, IZeroOne, Ballots {
 
     /**
      * @dev closes last voting in list
-     * @return descision
+     * @return success
      */
     function submitVoting() 
         public
-        returns (
-            VM.Vote descision
-        )
+        returns (bool)
     {
-        uint votingId = ballots.list.length - 1;
-        require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
-        descision = ballots.list[votingId].closeVoting();
-        uint questionId = ballots.list[votingId].questionId;
+
+        (uint votingId, uint questionId, VM.Vote result) = Ballots.closeVoting();
+        QuestionType.Question memory question = Questions.getQuestion(questionId);
 
         MetaData memory meta = MetaData({
             ballotId: votingId,
             questionId: questionId,
             startBlock: ballots.list[votingId].startBlock,
             endBlock: block.number,
-            result: Result.ACCEPTED
+            result: result
         });
 
         makeCall(
-            questions.list[questionId].target, 
-            questions.list[questionId].methodSelector, 
+            question.target, 
+            question.methodSelector, 
             ballots.list[votingId].votingData,
             meta
         );
-        emit VotingEnded(votingId, descision);
+
+        emit VotingEnded(votingId, result);
+        return true;
     }
 
     /**

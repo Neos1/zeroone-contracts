@@ -13,8 +13,6 @@ library BallotType {
 
     enum BallotStatus { CLOSED, ACTIVE }
 
-    enum BallotResult { NOT_ACCEPTED, POSITIVE, NEGATIVE }
-
     struct Ballot {
         uint startBlock;
         uint startTime;
@@ -155,62 +153,16 @@ library BallotType {
     }
 
     /**
-     * @dev set status in voting
-     * @param _status new Voting status 
-     * @return success
-     */
-    function setStatus(
-        Ballot storage _self,
-        BallotStatus _status
-    )
-        internal
-        returns (bool success)
-    {
-        _self.status = _status;
-        return _self.status == _status;
-    }
-
-    /**
-     * @dev set result and status "Closed" to voting
-     * @return success
-     */
-    function setResult(
-        Ballot storage _self
-    )
-        internal
-        returns (bool success)
-    {
-        require(setStatus(_self, BallotStatus.CLOSED), "Problem with setting status");
-        return true;
-    }
-
-    /**
-     * @dev calculates result of voting
-     */
-     // TODO Implement this after ready formula parser
-    function calculateResult()
-        internal
-        pure
-        returns (VM.Vote)
-    {
-        return VM.Vote.ACCEPTED;
-    }
-
-    /**
      * @dev close ballot by calculating result and setting status "CLOSED"
      * @param _self ballot
      */
-    function closeVoting(
+    function close(
         Ballot storage _self
     )
         internal
-        returns (VM.Vote result)
     {
-        VM.Vote _result = calculateResult();
-        setResult(_self);
-        return _result;
+       _self.status = BallotStatus.CLOSED;
     }
-
 
     function validate(
         //Ballot memory _self
