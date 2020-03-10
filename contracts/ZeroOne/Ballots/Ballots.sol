@@ -73,6 +73,38 @@ contract Ballots {
     }
 
     /**
+     * @dev closes the voting by executing descriptors for result calculating
+     * and setting BallotStatus.CLOSED
+     * @return votingId
+     * @return questionId
+     * @return result
+     */
+    function closeVoting()
+        public
+        returns (
+            uint votingId,
+            uint questionId,
+            VM.Vote result
+        )
+    {
+        votingId = ballots.list.length - 1;
+        questionId = ballots.list[votingId].questionId;
+
+        require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
+        bytes storage formula = questions.list[questionId].formula;
+        address owners = groups.list[0].groupAddress;
+        ballots.descriptors[votingId].executeResult(formula, owners);
+        ballots.list[votingId].close();
+
+        return (
+            votingId, 
+            questionId,
+            ballots.descriptors[votingId].result
+        );
+    }
+
+
+    /**
      * @dev getting the voting by id
      * @param _id id of voting
      * @return startTime

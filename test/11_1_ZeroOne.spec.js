@@ -57,8 +57,6 @@ contract('ZeroOne', ([from, secondary, third]) => {
         
         customToken.addToProjects(zeroOne.address);
 
-        
-
         for (question of questions) {
           question.rawFormula = formula;
           question.formula = compile(
@@ -120,8 +118,6 @@ contract('ZeroOne', ([from, secondary, third]) => {
         
         customToken.addToProjects(zeroOne.address);
 
-        console.log(`questions with formula --- ${formula}`);
-
         for (question of questions) {
           question.rawFormula = formula;
           question.formula = compile(
@@ -160,9 +156,5 @@ contract('ZeroOne', ([from, secondary, third]) => {
         }
       }
     });
-
-    it('should finish voting with UNDEFINED result', async () => {
-
-    })
   });
 });

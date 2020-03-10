@@ -2,9 +2,11 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "./IZeroOne.sol";
+import "./Questions/QuestionsWithGroups.sol";
+import "./UserGroups/UserGroups.sol";
+import "./Ballots/Ballots.sol";
 import "./Notifier/Notifier.sol";
 import "../lib/Meta.sol";
-import "./Ballots/Ballots.sol";
 import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
 
 
@@ -12,8 +14,9 @@ import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
  * @title ZeroOne
  * @dev main ZeroOne contract
  */
-contract ZeroOne is Notifier, IZeroOne, Ballots {
+contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups {
     using Meta for bytes;
+    using ZeroOneVM for ZeroOneVM.Ballot;
 
     event ZeroOneCall(
         MetaData _meta
@@ -33,6 +36,45 @@ contract ZeroOne is Notifier, IZeroOne, Ballots {
         );
         _;
     }
+
+    modifier groupIsAllowed(
+        uint _questionId,
+        uint _groupId
+    ) {
+        QuestionType.Question memory question = getQuestion(_questionId);
+        require(
+            _groupId == question.groupId,
+            "This group have no permissions to start voting with this question"
+         );
+        _;
+    }
+
+
+    /**
+     * @dev creates new Ballot in list, emits {VotingStarted}
+     * @param _votingPrimary primary info about voting
+     * @return id of new voting
+     */
+    function startVoting(
+        BallotList.BallotSimple memory _votingPrimary
+    )
+        public
+        noActiveVotings
+        questionExists(_votingPrimary.questionId)
+        groupIsAllowed(
+            _votingPrimary.questionId,
+            _votingPrimary.starterGroupId
+        )
+        returns (uint id)
+     {
+        _votingPrimary.endTime = block.timestamp + questions.list[_votingPrimary.questionId].timeLimit;
+        id = Ballots.addVoting(_votingPrimary);
+        ballots.descriptors[id].executeDescriptors(
+            questions.list[_votingPrimary.questionId].formula,
+            groups.list[0].groupAddress
+        );
+    }
+
 
     /**
      * @dev closes last voting in list
