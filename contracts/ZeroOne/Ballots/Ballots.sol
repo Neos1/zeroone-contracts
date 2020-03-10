@@ -3,22 +3,18 @@ pragma experimental ABIEncoderV2;
 
 import "./lib/Ballot.sol";
 import "./lib/BallotList.sol";
-import "../Questions/QuestionsWithGroups.sol";
-import "../UserGroups/UserGroups.sol";
 import "./IBallots.sol";
 import "../../__vendor__/IERC20.sol";
-import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
 
 
 /**
  * @title Ballots
  * @dev stores Ballots
  */
-contract Ballots is QuestionsWithGroups, UserGroups {
+contract Ballots {
 
     using BallotList for BallotList.List;
     using BallotType for BallotType.Ballot;
-    using ZeroOneVM for ZeroOneVM.Ballot;
 
     BallotList.List ballots;
 
@@ -55,46 +51,20 @@ contract Ballots is QuestionsWithGroups, UserGroups {
         _;
     }
 
-    modifier groupIsAllowed(
-        uint _questionId,
-        uint _groupId
-    ) {
-        QuestionType.Question memory question = getQuestion(_questionId);
-        require(
-            _groupId == question.groupId,
-            "This group have no permissions to start voting with this question"
-         );
-        _;
-    }
-
     /**
      * @dev returns the confirmation that this is a project
      */
     function isProject() public pure returns (bool) { return true; }
 
-    /**
-     * @dev creates new Ballot in list, emits {VotingStarted}
-     * @param _votingPrimary primary info about voting
-     * @return id of new voting
-     */
-    function startVoting(
+
+    function addVoting(
         BallotList.BallotSimple memory _votingPrimary
-    )
-        public
-        noActiveVotings()
-        questionExists(_votingPrimary.questionId)
-        groupIsAllowed(
-            _votingPrimary.questionId,
-            _votingPrimary.starterGroupId
-        )
-        returns (uint id)
+    ) 
+        public 
+        noActiveVotings 
+        returns (uint id) 
     {
-        _votingPrimary.endTime = block.timestamp + questions.list[_votingPrimary.questionId].timeLimit;
         id = ballots.add(_votingPrimary);
-        ballots.descriptors[id].executeDescriptors(
-            questions.list[_votingPrimary.questionId].formula,
-            groups.list[0].groupAddress
-        );
         emit VotingStarted(id, _votingPrimary.questionId);
     }
 
@@ -240,7 +210,7 @@ contract Ballots is QuestionsWithGroups, UserGroups {
                             user.vote = VM.Vote.UNDEFINED;
                         }
                     }
-                } else if ( (user.admin == true)  && (IERC20(user.groupAddress).owner() == msg.sender) ) {
+                } else if ( (user.admin == true) && (IERC20(user.groupAddress).owner() == msg.sender) ) {
                     user.userAddress = msg.sender;
                     bool userVoted = didUserVote(user.groupAddress, msg.sender);
                     if (userVoted) {
@@ -356,37 +326,6 @@ contract Ballots is QuestionsWithGroups, UserGroups {
     {
         uint votingId = ballots.list.length - 1;
         confirm = ballots.list[votingId].votes[_group][_user] != VM.Vote.UNDEFINED;
-    }
-
-    /**
-     * @dev closes the voting by executing descriptors for result calculating
-     * and setting BallotStatus.CLOSED
-     * @return votingId
-     * @return questionId
-     * @return result
-     */
-    function closeVoting()
-        public
-        returns (
-            uint votingId,
-            uint questionId,
-            VM.Vote result
-        )
-    {
-        votingId = ballots.list.length - 1;
-        questionId = ballots.list[votingId].questionId;
-
-        require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
-        bytes storage formula = questions.list[questionId].formula;
-        address owners = groups.list[0].groupAddress;
-        ballots.descriptors[votingId].executeResult(formula, owners);
-        ballots.list[votingId].close();
-
-        return (
-            votingId, 
-            questionId,
-            ballots.descriptors[votingId].result
-        );
     }
 
     /**

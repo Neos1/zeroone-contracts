@@ -35,7 +35,7 @@ contract('Ballot', ([from, secondary]) => {
     ballot = await Ballot.new({ from });
     customToken = await CustomToken.new('test', 'tst', 1000, { from });
 
-    await ballot.addQuestion(question)
+    // await ballot.addQuestion(question)
   });
 
   describe('constructor()', () => {
@@ -46,10 +46,10 @@ contract('Ballot', ([from, secondary]) => {
     });
   });
 
-  describe('startVoting()', () => {
-    it('should start voting', async () => {
+  describe('addVoting()', () => {
+    it('should add voting', async () => {
 
-      const tx = await ballot.startVoting(primaryInfo);
+      const tx = await ballot.addVoting(primaryInfo);
       const {args : {votingId, questionId}} = tx.logs.find(element => element.event.match('VotingStarted'));
 
       assert.strictEqual(votingId.toNumber(), 0);
@@ -59,12 +59,12 @@ contract('Ballot', ([from, secondary]) => {
       assert.strictEqual(amount.toNumber(), 1);
     });
 
-    it('should fail on start voting, while has active voting', async () => {
+    it('should fail on adding voting, while has active voting', async () => {
       let error = false;
 
-      await ballot.startVoting(primaryInfo);
+      await ballot.addVoting(primaryInfo);
       try {
-        await ballot.startVoting(primaryInfo);
+        await ballot.addVoting(primaryInfo);
       } catch ({ message }) {
         error = true;
         assert.strictEqual(message, getErrorMessage('You have active voting'));
@@ -75,21 +75,19 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('getVoting()', () => {
     it('should return information about voting',  async () => {
-      await ballot.startVoting(primaryInfo);
+      await ballot.addVoting(primaryInfo);
       const { 
         endTime,
         starterGroupId, 
         starterAddress,
         questionId,
-        status,
-        result
+        status
       } = await ballot.getVoting(0);
 
       assert.strictEqual(starterGroupId.toNumber(), 0);
       assert.strictEqual(starterAddress, secondary);
       assert.strictEqual(questionId.toNumber(), 0);
       assert.strictEqual(status.toNumber(), 1);
-      assert.strictEqual(result.toNumber(), 0);
     });
 
     it('should fail on getting non-existing voting', async () => {
@@ -109,7 +107,7 @@ contract('Ballot', ([from, secondary]) => {
       let amount = await ballot.getVotingsAmount();
       assert.strictEqual(amount.toNumber(), 0);
 
-      await ballot.startVoting(primaryInfo);
+      await ballot.addVoting(primaryInfo);
 
       amount = await ballot.getVotingsAmount();
       assert.strictEqual(amount.toNumber(), 1);
@@ -118,51 +116,48 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('setVote()', () => {
     it('should successfully set Positive vote', async () => {
-      await ballot.startVoting(primaryInfo);
+      await ballot.addVoting(primaryInfo);
 
-      const tx = await ballot.setVote(from, secondary, 1, 200);
+      const tx = await ballot.setVote(1);
       const {args : {
-        user, group, descision
+        user, descision
       }} = tx.logs.find(element => element.event.match('UserVote'));
 
-      assert.strictEqual(user, secondary);
-      assert.strictEqual(group, from);
+      assert.strictEqual(user, from);
       assert.strictEqual(descision.toNumber(), 1)
     })
 
     it('should successfully set Negative vote', async () => {
-      await ballot.startVoting(primaryInfo);
+      await ballot.addVoting(primaryInfo);
 
-      const tx = await ballot.setVote(from, secondary, 2, 200);
+      const tx = await ballot.setVote(2);
       const {args : {
-        user, group, descision
+        user, descision
       }} = tx.logs.find(element => element.event.match('UserVote'));
 
-      assert.strictEqual(user, secondary);
-      assert.strictEqual(group, from);
+      assert.strictEqual(user, from);
       assert.strictEqual(descision.toNumber(), 2)
     })
 
     it('should successfully remove vote', async () => {
-      await ballot.startVoting(primaryInfo);
+      await ballot.addVoting(primaryInfo);
 
-      const tx = await ballot.setVote(from, secondary, 0, 0);
+      const tx = await ballot.setVote(1);
       const {args : {
-        user, group, descision
+        user, descision
       }} = tx.logs.find(element => element.event.match('UserVote'));
 
-      assert.strictEqual(user, secondary);
-      assert.strictEqual(group, from);
-      assert.strictEqual(descision.toNumber(), 0)
+      assert.strictEqual(user, from);
+      assert.strictEqual(descision.toNumber(), 1)
     })
 
     it('should fail on set new vote of user, which already voted', async () => {
       let error = false;
-      await ballot.startVoting(primaryInfo);
-      await ballot.setVote(from, secondary, 1, 1000);
+      await ballot.addVoting(primaryInfo);
+      await ballot.setVote(1);
       try {
         error = true;
-        await ballot.setVote(from, secondary, 2, 0);
+        await ballot.setVote(2);
       } catch ({message}) {
         assert.strictEqual(message, getErrorMessage('User already vote'));
       }
@@ -170,57 +165,24 @@ contract('Ballot', ([from, secondary]) => {
     })
   })
 
-  describe('closeVoting()', () => {
-    it('should successfully close voting', async () => {
-      await ballot.startVoting(primaryInfo);
-      increaseTime(web3, 300000);
-      const tx = await ballot.closeVoting();
-      const {args : {votingId, descision}} = tx.logs.find(element => element.event.match('VotingEnded'));
-      assert.strictEqual(votingId.toNumber(), 0);
-      assert.strictEqual(descision.toNumber(), 0);
-    })
-
-    it('should fail on close voting, when time is not over', async () => {
-      let error = false;
-      await ballot.startVoting(primaryInfo);
-      try {
-        await ballot.closeVoting();
-      } catch ({message}) {
-        error = true;
-        assert.strictEqual(message, getErrorMessage('Time is not over yet'));
-      }
-      assert.strictEqual(error, true)
-    });
-  })
-
   describe('events', () => {
     it('should fire VotingStarted event', async () => {
-      const tx = await ballot.startVoting(primaryInfo);
+      const tx = await ballot.addVoting(primaryInfo);
       const {args : {votingId, questionId}} = tx.logs.find(element => element.event.match('VotingStarted'));
 
       assert.strictEqual(votingId.toNumber(), 0);
       assert.strictEqual(questionId.toNumber(), primaryInfo.questionId);
     });
 
-    it('should fire VotingEnded event', async () => {
-      await ballot.startVoting(primaryInfo);
-      increaseTime(web3, 300000);
-      const tx = await ballot.closeVoting();
-      const {args : {votingId, descision}} = tx.logs.find(element => element.event.match('VotingEnded'));
-      assert.strictEqual(votingId.toNumber(), 0);
-      assert.strictEqual(descision.toNumber(), 0);
-    });
-
     it('should fire UserVote event', async () => {
-      await ballot.startVoting(primaryInfo);
+      await ballot.addVoting(primaryInfo);
 
-      const tx = await ballot.setVote(from, secondary, 1, 200);
+      const tx = await ballot.setVote(1);
       const {args : {
-        user, group, descision
+        user, descision
       }} = tx.logs.find(element => element.event.match('UserVote'));
 
-      assert.strictEqual(user, secondary);
-      assert.strictEqual(group, from);
+      assert.strictEqual(user, from);
       assert.strictEqual(descision.toNumber(), 1)
     });
   })
