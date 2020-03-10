@@ -56,7 +56,11 @@ contract Ballots {
      */
     function isProject() public pure returns (bool) { return true; }
 
-
+    /**
+     * @dev add ballot to list. Requires no active votings in list
+     * @param _votingPrimary primary info of voting
+     * @return id
+     */
     function addVoting(
         BallotList.BallotSimple memory _votingPrimary
     ) 
