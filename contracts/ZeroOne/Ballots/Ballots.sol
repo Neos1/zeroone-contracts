@@ -15,6 +15,8 @@ contract Ballots {
 
     using BallotList for BallotList.List;
     using BallotType for BallotType.Ballot;
+    using ZeroOneVM for ZeroOneVM.Ballot;
+
 
     BallotList.List ballots;
 
@@ -75,30 +77,28 @@ contract Ballots {
     /**
      * @dev closes the voting by executing descriptors for result calculating
      * and setting BallotStatus.CLOSED
-     * @return votingId
-     * @return questionId
+     * @param votingId id of voting
+     * @param formula formula of voting
+     * @param owners address of 
      * @return result
      */
-    function closeVoting()
-        public
+    function closeVoting(
+        uint votingId,
+        bytes storage formula,
+        address owners
+    )
+        internal
         returns (
-            uint votingId,
-            uint questionId,
             VM.Vote result
         )
-    {
-        votingId = ballots.list.length - 1;
-        questionId = ballots.list[votingId].questionId;
-
+    {        
         require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
-        bytes storage formula = questions.list[questionId].formula;
-        address owners = groups.list[0].groupAddress;
         ballots.descriptors[votingId].executeResult(formula, owners);
         ballots.list[votingId].close();
 
+        emit VotingEnded(votingId, ballots.descriptors[votingId].result);
+
         return (
-            votingId, 
-            questionId,
             ballots.descriptors[votingId].result
         );
     }
@@ -147,6 +147,28 @@ contract Ballots {
     }
 
     /**
+     * @dev sets positive, negative votes and totalSupply for group in descriptors
+     * @param groupAddress address of group (for totalSupply)
+     * @param votingId id of voting
+     * @param groupIndex index of group in ZeroOneVM.Ballot struct
+     * @return success 
+     */
+    function setGroupVotes(
+        address groupAddress,
+        uint votingId,
+        uint groupIndex
+    )
+        internal
+        returns(bool success) 
+    {
+        (uint positive, uint negative, uint totalSupply) = ballots.list[votingId].getGroupVotes(groupAddress);
+        ballots.descriptors[votingId].groups[groupIndex].positive = positive;
+        ballots.descriptors[votingId].groups[groupIndex].negative = negative;
+        ballots.descriptors[votingId].groups[groupIndex].totalSupply = totalSupply;
+        return true;
+    }
+
+    /**
      * @dev set {_descision} of {_user} from {_group}
      * method fetching balance of {_user} in {_group} and writing vote in voting struct
      * @param _descision descision of {_user}
@@ -165,36 +187,31 @@ contract Ballots {
             DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
             
             if (group.groupAddress != address(0)) {
-                bool excluded = isUserExcluded(group.exclude, msg.sender);
-                if (!excluded) {
-                    bool userVoted = didUserVote(group.groupAddress, msg.sender);
-                    if (!userVoted) {
+                if (!isUserExcluded(group.exclude, msg.sender)) {
+                    if (!didUserVote(group.groupAddress, msg.sender)) {
                         ballots.list[votingId].setVote(group.groupAddress, msg.sender, _descision);
-                        (uint positive, uint negative, uint totalSupply) = ballots.list[votingId].getGroupVotes(group.groupAddress);
-                        ballots.descriptors[votingId].groups[i].positive = positive;
-                        ballots.descriptors[votingId].groups[i].negative = negative;
-                        ballots.descriptors[votingId].groups[i].totalSupply = totalSupply;
+                        setGroupVotes(group.groupAddress, votingId, i);
                     }
                 }
             }
 
             if (user.groupAddress != address(0)) { 
+                address userAddress;
+                address groupAddress = group.groupAddress; 
 
                 if((user.userAddress != address(0)) && (user.userAddress == msg.sender)) {
-                    bool userVoted = didUserVote(user.groupAddress, user.userAddress);
-                    if (!userVoted) {
-                        ballots.list[votingId].setVote(user.groupAddress, user.userAddress, _descision);
-                    } else {
-                        user.vote = getUserVote(votingId, group.groupAddress, user.userAddress);
-                    }
-                } else if ( (user.admin == true)  && (IERC20(user.groupAddress).owner() == msg.sender) ) {
+                    userAddress = msg.sender;
+                } else if (user.admin == true && IERC20(user.groupAddress).owner() == msg.sender) {
                     user.userAddress = msg.sender;
-                    bool userVoted = didUserVote(user.groupAddress, msg.sender);
-                    if (!userVoted) {
-                        ballots.list[votingId].setVote(user.groupAddress, msg.sender, _descision);
+                    userAddress = msg.sender;
+                }
+
+                if(userAddress != address(0)){
+                     if (!didUserVote(user.groupAddress, user.userAddress)) {
+                        ballots.list[votingId].setVote(groupAddress, userAddress, _descision);
                         user.vote = _descision;
                     } else {
-                        user.vote = getUserVote(votingId, group.groupAddress, msg.sender);
+                        user.vote = getUserVote(votingId, groupAddress, userAddress);
                     }
                 }
             }
@@ -223,33 +240,23 @@ contract Ballots {
         for (uint i = 0; i < 16; i++) {
             DescriptorVM.Group storage group = ballots.descriptors[votingId].groups[i];
             DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
-            if ((group.groupAddress != address(0) && (group.groupAddress == _group))) {
-                bool excluded = isUserExcluded(group.exclude, _user);
-                if (!excluded) {
-                    bool userVoted = didUserVote(group.groupAddress, msg.sender);
-                    if (userVoted) {   
+            if (group.groupAddress != address(0) && group.groupAddress == _group) {
+                if (!isUserExcluded(group.exclude, _user)) {
+                    if (didUserVote(group.groupAddress, msg.sender)) {   
                         ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
-                        (uint256 positive, uint256 negative, uint256 totalSupply) = ballots.list[votingId].getGroupVotes(group.groupAddress);
-                        group.positive = positive;
-                        group.negative = negative;
-                        group.totalSupply = totalSupply;
+                        setGroupVotes(group.groupAddress, votingId, i);
                     }
                 }
             }
 
-            if ((user.groupAddress != address(0)) && (user.groupAddress == _group)) {
-                if((user.userAddress != address(0)) && (user.userAddress == msg.sender)) {
-                    bool userVoted = didUserVote(user.groupAddress, _user);
-                    if (userVoted) {
-                        ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
-                        if (_newVoteWeight == 0) {
-                            user.vote = VM.Vote.UNDEFINED;
-                        }
-                    }
-                } else if ( (user.admin == true) && (IERC20(user.groupAddress).owner() == msg.sender) ) {
+            if ( user.groupAddress != address(0) && user.groupAddress == _group ) {
+                if ( user.admin == true && IERC20(user.groupAddress).owner() == msg.sender ) {
                     user.userAddress = msg.sender;
-                    bool userVoted = didUserVote(user.groupAddress, msg.sender);
-                    if (userVoted) {
+                }
+
+                if (user.userAddress != address(0)) {
+                    if (didUserVote(user.groupAddress, msg.sender)) {
+                        ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
                         if (_newVoteWeight == 0) {
                             user.vote = VM.Vote.UNDEFINED;
                         }

@@ -16,7 +16,6 @@ import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
  */
 contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups {
     using Meta for bytes;
-    using ZeroOneVM for ZeroOneVM.Ballot;
 
     event ZeroOneCall(
         MetaData _meta
@@ -84,8 +83,13 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         public
         returns (bool)
     {
+        uint votingId = ballots.list.length - 1;
+        uint questionId = ballots.list[votingId].questionId;
 
-        (uint votingId, uint questionId, VM.Vote result) = Ballots.closeVoting();
+        bytes storage formula = questions.list[questionId].formula;
+        address owners = groups.list[0].groupAddress;
+
+        VM.Vote result = Ballots.closeVoting(votingId, formula, owners);
         QuestionType.Question memory question = Questions.getQuestion(questionId);
 
         MetaData memory meta = MetaData({
@@ -103,7 +107,6 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
             meta
         );
 
-        emit VotingEnded(votingId, result);
         return true;
     }
 

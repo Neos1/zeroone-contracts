@@ -165,6 +165,29 @@ contract('Ballot', ([from, secondary]) => {
     })
   })
 
+  describe('closeVoting()', () => {
+    it('should successfully close voting', async () => {
+      await ballot.addVoting(primaryInfo);
+      increaseTime(web3, 300000);
+      const tx = await ballot.closeVoting();
+      const {args : {votingId, descision}} = tx.logs.find(element => element.event.match('VotingEnded'));
+      assert.strictEqual(votingId.toNumber(), 0);
+      assert.strictEqual(descision.toNumber(), 0);
+    })
+
+    it('should fail on close voting, when time is not over', async () => {
+      let error = false;
+      await ballot.addVoting(primaryInfo);
+      try {
+        await ballot.closeVoting();
+      } catch ({message}) {
+        error = true;
+        assert.strictEqual(message, getErrorMessage('Time is not over yet'));
+      }
+      assert.strictEqual(error, true)
+    });
+  })
+
   describe('events', () => {
     it('should fire VotingStarted event', async () => {
       const tx = await ballot.addVoting(primaryInfo);
