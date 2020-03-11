@@ -64,13 +64,20 @@ contract Ballots {
      * @return id
      */
     function addVoting(
-        BallotList.BallotSimple memory _votingPrimary
+        BallotList.BallotSimple memory _votingPrimary,
+        bytes storage formula,
+        address owners
     ) 
-        public 
+        internal 
         noActiveVotings 
         returns (uint id) 
     {
         id = ballots.add(_votingPrimary);
+
+        ballots.descriptors[id].executeDescriptors(
+            formula,
+            owners
+        );
         emit VotingStarted(id, _votingPrimary.questionId);
     }
 
@@ -93,6 +100,7 @@ contract Ballots {
         )
     {        
         require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
+
         ballots.descriptors[votingId].executeResult(formula, owners);
         ballots.list[votingId].close();
 
@@ -207,7 +215,7 @@ contract Ballots {
                 }
 
                 if(userAddress != address(0)){
-                     if (!didUserVote(user.groupAddress, user.userAddress)) {
+                    if (!didUserVote(user.groupAddress, user.userAddress)) {
                         ballots.list[votingId].setVote(groupAddress, userAddress, _descision);
                         user.vote = _descision;
                     } else {

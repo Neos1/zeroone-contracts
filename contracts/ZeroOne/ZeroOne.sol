@@ -67,8 +67,9 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         returns (uint id)
      {
         _votingPrimary.endTime = block.timestamp + questions.list[_votingPrimary.questionId].timeLimit;
-        id = Ballots.addVoting(_votingPrimary);
-        ballots.descriptors[id].executeDescriptors(
+        
+        id = Ballots.addVoting(
+            _votingPrimary,
             questions.list[_votingPrimary.questionId].formula,
             groups.list[0].groupAddress
         );

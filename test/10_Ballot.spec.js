@@ -1,6 +1,5 @@
-const Ballot = artifacts.require('Ballots.sol');
-const Questions = artifacts.require('QuestionsWithGroups.sol');
-const UserGroups = artifacts.require('UserGroups.sol');
+const Ballot = artifacts.require('BallotsMock.sol');
+const ZeroOneVM = artifacts.require('ZeroOneVM.sol');
 const CustomToken = artifacts.require('CustomToken.sol');
 
 const { getErrorMessage, getShortErrorMessage } = require('./helpers/get-error-message');
@@ -29,9 +28,12 @@ contract('Ballot', ([from, secondary]) => {
       target: from,
       methodSelector: '0x12121212'
     };
+
     group = {
         name: 'group name'
     };
+    zeroOneVM = await ZeroOneVM.new()
+    await Ballot.link("ZeroOneVM", zeroOneVM.address);
     ballot = await Ballot.new({ from });
     customToken = await CustomToken.new('test', 'tst', 1000, { from });
 
@@ -49,7 +51,7 @@ contract('Ballot', ([from, secondary]) => {
   describe('addVoting()', () => {
     it('should add voting', async () => {
 
-      const tx = await ballot.addVoting(primaryInfo);
+      const tx = await ballot.testAddVoting(primaryInfo);
       const {args : {votingId, questionId}} = tx.logs.find(element => element.event.match('VotingStarted'));
 
       assert.strictEqual(votingId.toNumber(), 0);
@@ -62,9 +64,9 @@ contract('Ballot', ([from, secondary]) => {
     it('should fail on adding voting, while has active voting', async () => {
       let error = false;
 
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
       try {
-        await ballot.addVoting(primaryInfo);
+        await ballot.testAddVoting(primaryInfo);
       } catch ({ message }) {
         error = true;
         assert.strictEqual(message, getErrorMessage('You have active voting'));
@@ -75,7 +77,7 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('getVoting()', () => {
     it('should return information about voting',  async () => {
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
       const { 
         endTime,
         starterGroupId, 
@@ -107,7 +109,7 @@ contract('Ballot', ([from, secondary]) => {
       let amount = await ballot.getVotingsAmount();
       assert.strictEqual(amount.toNumber(), 0);
 
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
 
       amount = await ballot.getVotingsAmount();
       assert.strictEqual(amount.toNumber(), 1);
@@ -116,7 +118,7 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('setVote()', () => {
     it('should successfully set Positive vote', async () => {
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
 
       const tx = await ballot.setVote(1);
       const {args : {
@@ -128,7 +130,7 @@ contract('Ballot', ([from, secondary]) => {
     })
 
     it('should successfully set Negative vote', async () => {
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
 
       const tx = await ballot.setVote(2);
       const {args : {
@@ -140,7 +142,7 @@ contract('Ballot', ([from, secondary]) => {
     })
 
     it('should successfully remove vote', async () => {
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
 
       const tx = await ballot.setVote(1);
       const {args : {
@@ -153,7 +155,7 @@ contract('Ballot', ([from, secondary]) => {
 
     it('should fail on set new vote of user, which already voted', async () => {
       let error = false;
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
       await ballot.setVote(1);
       try {
         error = true;
@@ -167,9 +169,9 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('closeVoting()', () => {
     it('should successfully close voting', async () => {
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
       increaseTime(web3, 300000);
-      const tx = await ballot.closeVoting();
+      const tx = await ballot.testCloseVoting();
       const {args : {votingId, descision}} = tx.logs.find(element => element.event.match('VotingEnded'));
       assert.strictEqual(votingId.toNumber(), 0);
       assert.strictEqual(descision.toNumber(), 0);
@@ -177,9 +179,9 @@ contract('Ballot', ([from, secondary]) => {
 
     it('should fail on close voting, when time is not over', async () => {
       let error = false;
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
       try {
-        await ballot.closeVoting();
+        await ballot.testCloseVoting();
       } catch ({message}) {
         error = true;
         assert.strictEqual(message, getErrorMessage('Time is not over yet'));
@@ -190,7 +192,7 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('events', () => {
     it('should fire VotingStarted event', async () => {
-      const tx = await ballot.addVoting(primaryInfo);
+      const tx = await ballot.testAddVoting(primaryInfo);
       const {args : {votingId, questionId}} = tx.logs.find(element => element.event.match('VotingStarted'));
 
       assert.strictEqual(votingId.toNumber(), 0);
@@ -198,7 +200,7 @@ contract('Ballot', ([from, secondary]) => {
     });
 
     it('should fire UserVote event', async () => {
-      await ballot.addVoting(primaryInfo);
+      await ballot.testAddVoting(primaryInfo);
 
       const tx = await ballot.setVote(1);
       const {args : {
