@@ -50,7 +50,8 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('addVoting()', () => {
     it('should add voting', async () => {
-
+      
+      // await ballot.setFormula("0x0041c8a92378323f33fc30b0a10e3fd771eb8f6dff010006010032320704000904000000");
       const tx = await ballot.testAddVoting(primaryInfo);
       const {args : {votingId, questionId}} = tx.logs.find(element => element.event.match('VotingStarted'));
 

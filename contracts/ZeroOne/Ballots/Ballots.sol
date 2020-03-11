@@ -29,6 +29,8 @@ contract Ballots {
 
     event UpdatedUserVote(address group, address user);
 
+    event Formula(bytes formula);
+
     /**
      * @notice reverts on non-existing ballot id
      * @param _id ballot id
@@ -61,6 +63,8 @@ contract Ballots {
     /**
      * @dev add ballot to list. Requires no active votings in list
      * @param _votingPrimary primary info of voting
+     * @param formula formula
+     * @param owners address of owners
      * @return id
      */
     function addVoting(
@@ -74,10 +78,8 @@ contract Ballots {
     {
         id = ballots.add(_votingPrimary);
 
-        ballots.descriptors[id].executeDescriptors(
-            formula,
-            owners
-        );
+        ballots.descriptors[id].executeDescriptors(formula, owners);
+
         emit VotingStarted(id, _votingPrimary.questionId);
     }
 
@@ -86,7 +88,7 @@ contract Ballots {
      * and setting BallotStatus.CLOSED
      * @param votingId id of voting
      * @param formula formula of voting
-     * @param owners address of 
+     * @param owners address of owners
      * @return result
      */
     function closeVoting(
