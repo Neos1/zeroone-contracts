@@ -7,6 +7,7 @@ const increaseTime = require('./helpers/increase-time');
 
 contract('Ballot', ([from, secondary]) => {
   let ballot;
+  let token;
 
   const primaryInfo = {
     starterGroupId: 0,
@@ -32,10 +33,10 @@ contract('Ballot', ([from, secondary]) => {
     group = {
         name: 'group name'
     };
-    zeroOneVM = await ZeroOneVM.new()
+
+    zeroOneVM = await ZeroOneVM.new();
     await Ballot.link("ZeroOneVM", zeroOneVM.address);
     ballot = await Ballot.new({ from });
-    customToken = await CustomToken.new('test', 'tst', 1000, { from });
 
     // await ballot.addQuestion(question)
   });
@@ -50,8 +51,6 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('addVoting()', () => {
     it('should add voting', async () => {
-      
-      // await ballot.setFormula("0x0041c8a92378323f33fc30b0a10e3fd771eb8f6dff010006010032320704000904000000");
       const tx = await ballot.testAddVoting(primaryInfo);
       const {args : {votingId, questionId}} = tx.logs.find(element => element.event.match('VotingStarted'));
 
@@ -119,6 +118,9 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('setVote()', () => {
     it('should successfully set Positive vote', async () => {
+      token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
+      token.addToProjects(ballot.address);
+
       await ballot.testAddVoting(primaryInfo);
 
       const tx = await ballot.setVote(1);
@@ -131,6 +133,9 @@ contract('Ballot', ([from, secondary]) => {
     })
 
     it('should successfully set Negative vote', async () => {
+      token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
+      token.addToProjects(ballot.address);
+
       await ballot.testAddVoting(primaryInfo);
 
       const tx = await ballot.setVote(2);
@@ -143,6 +148,9 @@ contract('Ballot', ([from, secondary]) => {
     })
 
     it('should successfully remove vote', async () => {
+      token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
+      token.addToProjects(ballot.address);
+
       await ballot.testAddVoting(primaryInfo);
 
       const tx = await ballot.setVote(1);
@@ -155,6 +163,9 @@ contract('Ballot', ([from, secondary]) => {
     })
 
     it('should fail on set new vote of user, which already voted', async () => {
+      token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
+      token.addToProjects(ballot.address);
+
       let error = false;
       await ballot.testAddVoting(primaryInfo);
       await ballot.setVote(1);
@@ -175,7 +186,7 @@ contract('Ballot', ([from, secondary]) => {
       const tx = await ballot.testCloseVoting();
       const {args : {votingId, descision}} = tx.logs.find(element => element.event.match('VotingEnded'));
       assert.strictEqual(votingId.toNumber(), 0);
-      assert.strictEqual(descision.toNumber(), 0);
+      assert.strictEqual(descision.toNumber(), 1);
     })
 
     it('should fail on close voting, when time is not over', async () => {
@@ -201,6 +212,9 @@ contract('Ballot', ([from, secondary]) => {
     });
 
     it('should fire UserVote event', async () => {
+      token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
+      token.addToProjects(ballot.address);
+
       await ballot.testAddVoting(primaryInfo);
 
       const tx = await ballot.setVote(1);

@@ -1,5 +1,5 @@
 const CustomToken = artifacts.require('./CustomToken.sol');
-const ZeroOne = artifacts.require('./ZeroOneMock.sol');
+// const ZeroOne = artifacts.require('./ZeroOneMock.sol');
 
 const { getErrorMessage } = require('./helpers/get-error-message');
 const increase = require('./helpers/increase-time');
@@ -15,13 +15,14 @@ contract('CustomToken', (accounts) => {
 
   beforeEach( async () => {
     token = await CustomToken.new( ...params, { from });
-    zeroOne = await ZeroOne.new({from});
+    // zeroOne = await ZeroOne.new({from});
     admin = await token.owner();
   });
 
   describe('constructor()', () => {
     it('should be successfully created', async () => {
        token = await CustomToken.new( ...params, { from });
+       console.log(token.address)
 
        const [name, symbol, totalSupply] = params;
        const tokenName = await token.name();
