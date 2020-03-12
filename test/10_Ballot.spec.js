@@ -37,7 +37,7 @@ contract('Ballot', ([from, secondary]) => {
     zeroOneVM = await ZeroOneVM.new();
     await Ballot.link("ZeroOneVM", zeroOneVM.address);
     ballot = await Ballot.new({ from });
-
+    token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
     // await ballot.addQuestion(question)
   });
 
@@ -118,7 +118,7 @@ contract('Ballot', ([from, secondary]) => {
 
   describe('setVote()', () => {
     it('should successfully set Positive vote', async () => {
-      token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
+   
       token.addToProjects(ballot.address);
 
       await ballot.testAddVoting(primaryInfo);
@@ -133,7 +133,6 @@ contract('Ballot', ([from, secondary]) => {
     })
 
     it('should successfully set Negative vote', async () => {
-      token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
       token.addToProjects(ballot.address);
 
       await ballot.testAddVoting(primaryInfo);
@@ -147,12 +146,29 @@ contract('Ballot', ([from, secondary]) => {
       assert.strictEqual(descision.toNumber(), 2)
     })
 
-    it('should successfully remove vote', async () => {
-      token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
+    it('should successfully update vote of user to UNDEFINED', async () => {
       token.addToProjects(ballot.address);
 
       await ballot.testAddVoting(primaryInfo);
+      const tx = await ballot.setVote(2);
+      const {args : {
+        user:sender, descision
+      }} = tx.logs.find(element => element.event.match('UserVote'));
 
+      assert.strictEqual(sender, from);
+      assert.strictEqual(descision.toNumber(), 2);
+
+      await token.transferFrom(from, secondary, 1000);
+      const userVote = await ballot.getUserVote(0, token.address, from);
+      const voteWeight = await ballot.getUserVoteWeight(0, token.address, from);
+      // assert.strictEqual(userVote.toNumber(), 0);
+      assert.strictEqual(voteWeight.toNumber(), 0);
+    })
+
+    it('should successfully remove vote', async () => {
+      token.addToProjects(ballot.address);
+
+      await ballot.testAddVoting(primaryInfo);
       const tx = await ballot.setVote(1);
       const {args : {
         user, descision
@@ -160,22 +176,20 @@ contract('Ballot', ([from, secondary]) => {
 
       assert.strictEqual(user, from);
       assert.strictEqual(descision.toNumber(), 1)
+
+      await token.revoke(ballot.address)
+
+      const userVote = await ballot.getUserVote(0, token.address, from);
+      assert.strictEqual(userVote.toNumber(), 0);
     })
 
-    it('should fail on set new vote of user, which already voted', async () => {
-      token = await CustomToken.at('0xBEF946538A29B7c330F6a77f61c5C1c8735a8ace');
+    it('should not set new vote of user, which already voted', async () => {
       token.addToProjects(ballot.address);
-
-      let error = false;
       await ballot.testAddVoting(primaryInfo);
       await ballot.setVote(1);
-      try {
-        error = true;
-        await ballot.setVote(2);
-      } catch ({message}) {
-        assert.strictEqual(message, getErrorMessage('User already vote'));
-      }
-      assert.strictEqual(error, true)
+      await ballot.setVote(2);
+      const userVote = await ballot.getUserVote(0, token.address, from)
+      assert.strictEqual(userVote.toNumber(), 1);
     })
   })
 

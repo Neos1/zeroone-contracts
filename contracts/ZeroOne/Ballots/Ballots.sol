@@ -17,9 +17,7 @@ contract Ballots {
     using BallotType for BallotType.Ballot;
     using ZeroOneVM for ZeroOneVM.Ballot;
 
-
     BallotList.List ballots;
-
 
     event VotingStarted(uint votingId, uint questionId);
 
@@ -27,9 +25,7 @@ contract Ballots {
 
     event UserVote(address user, VM.Vote descision);
 
-    event UpdatedUserVote(address group, address user);
-
-    event Formula(bytes formula);
+    event UpdatedUserVote(address group, address user, VM.Vote userVote);
 
     /**
      * @notice reverts on non-existing ballot id
@@ -77,9 +73,7 @@ contract Ballots {
         returns (uint id) 
     {
         id = ballots.add(_votingPrimary);
-
         ballots.descriptors[id].executeDescriptors(formula, owners);
-
         emit VotingStarted(id, _votingPrimary.questionId);
     }
 
@@ -112,7 +106,6 @@ contract Ballots {
             ballots.descriptors[votingId].result
         );
     }
-
 
     /**
      * @dev getting the voting by id
@@ -252,7 +245,7 @@ contract Ballots {
             DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
             if (group.groupAddress != address(0) && group.groupAddress == _group) {
                 if (!isUserExcluded(group.exclude, _user)) {
-                    if (didUserVote(group.groupAddress, msg.sender)) {   
+                    if (didUserVote(group.groupAddress, _user)) {   
                         ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
                         setGroupVotes(group.groupAddress, votingId, i);
                     }
@@ -260,12 +253,12 @@ contract Ballots {
             }
 
             if ( user.groupAddress != address(0) && user.groupAddress == _group ) {
-                if ( user.admin == true && IERC20(user.groupAddress).owner() == msg.sender ) {
-                    user.userAddress = msg.sender;
+                if ( user.admin == true && IERC20(user.groupAddress).owner() == _user ) {
+                    user.userAddress = _user;
                 }
 
                 if (user.userAddress != address(0)) {
-                    if (didUserVote(user.groupAddress, msg.sender)) {
+                    if (didUserVote(user.groupAddress, _user)) {
                         ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
                         if (_newVoteWeight == 0) {
                             user.vote = VM.Vote.UNDEFINED;
@@ -274,7 +267,9 @@ contract Ballots {
                 }
             }
         }
-        emit UpdatedUserVote(_group, _user);
+
+        VM.Vote userVote = getUserVote(votingId, _group, _user);
+        emit UpdatedUserVote(_group, _user, userVote);
         return true;
     }   
 
@@ -340,7 +335,6 @@ contract Ballots {
         ballotExist(_votingId)
         returns (VM.Vote descision)
     {
-
         return ballots.list[_votingId].votes[_group][_user];
     }
 
