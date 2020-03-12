@@ -161,7 +161,7 @@ contract('Ballot', ([from, secondary]) => {
       await token.transferFrom(from, secondary, 1000);
       const userVote = await ballot.getUserVote(0, token.address, from);
       const voteWeight = await ballot.getUserVoteWeight(0, token.address, from);
-      // assert.strictEqual(userVote.toNumber(), 0);
+      assert.strictEqual(userVote.toNumber(), 0);
       assert.strictEqual(voteWeight.toNumber(), 0);
     })
 
