@@ -91,6 +91,7 @@ contract QuestionsWithGroups is Questions {
     function addQuestionGroup(
         GroupType.Group memory _questionGroup
     )
+        virtual
         public
         returns (uint id)
     {

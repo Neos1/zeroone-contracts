@@ -28,6 +28,8 @@ library QuestionType {
         string[] paramTypes;
         address target;
         bytes4 methodSelector;
+        string rawFormula;
+        bytes formula;
     }
 
     /**

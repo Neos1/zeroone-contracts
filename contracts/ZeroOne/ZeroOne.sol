@@ -2,51 +2,27 @@ pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
 import "./IZeroOne.sol";
+import "./Questions/QuestionsWithGroups.sol";
+import "./UserGroups/UserGroups.sol";
+import "./Ballots/Ballots.sol";
 import "./Notifier/Notifier.sol";
 import "../lib/Meta.sol";
-import "./UserGroups/IERC20.sol";
+import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
 
 
 /**
  * @title ZeroOne
  * @dev main ZeroOne contract
  */
-contract ZeroOne is Notifier, IZeroOne {
+contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups {
     using Meta for bytes;
 
-    enum BallotStatus { CLOSED, ACTIVE }
+    event ZeroOneCall(
+        MetaData _meta
+    );
 
-    enum BallotResult { NOT_ACCEPTED, POSITIVE, NEGATIVE }
-
-    struct Ballot {
-        uint startBlock;
-        uint startTime;
-        uint endTime;
-        uint starterGroupId;
-        address starterAddress;
-        uint questionId;
-        BallotStatus status;
-        BallotResult result;
-        bytes votingData;
-        mapping(address => mapping(address => BallotResult)) votes;
-        mapping(address => mapping(address => uint256)) votesWeight;
-        mapping(address => mapping(uint => uint256)) descisionWeights;
-    }
-
-    Ballot ballot;
-
-    constructor() public {
-        ballot = Ballot({
-            startBlock: block.number,
-            startTime: block.timestamp,
-            endTime: block.timestamp + 36000,
-            starterGroupId: 0,
-            starterAddress: msg.sender,
-            questionId: 1,
-            status: BallotStatus.ACTIVE,
-            result: BallotResult.NOT_ACCEPTED,
-            votingData: "0x"
-        });
+    constructor(UserGroup.Group memory _group) public {
+        addUserGroup(_group);
     }
 
     /**
@@ -58,6 +34,81 @@ contract ZeroOne is Notifier, IZeroOne {
             "Only self call is possible"
         );
         _;
+    }
+
+    modifier groupIsAllowed(
+        uint _questionId,
+        uint _groupId
+    ) {
+        QuestionType.Question memory question = getQuestion(_questionId);
+        require(
+            _groupId == question.groupId,
+            "This group have no permissions to start voting with this question"
+         );
+        _;
+    }
+
+
+    /**
+     * @dev creates new Ballot in list, emits {VotingStarted}
+     * @param _votingPrimary primary info about voting
+     * @return id of new voting
+     */
+    function startVoting(
+        BallotList.BallotSimple memory _votingPrimary
+    )
+        public
+        noActiveVotings
+        questionExists(_votingPrimary.questionId)
+        groupIsAllowed(
+            _votingPrimary.questionId,
+            _votingPrimary.starterGroupId
+        )
+        returns (uint id)
+     {
+        _votingPrimary.endTime = block.timestamp + questions.list[_votingPrimary.questionId].timeLimit;
+        
+        id = Ballots.addVoting(
+            _votingPrimary,
+            questions.list[_votingPrimary.questionId].formula,
+            groups.list[0].groupAddress
+        );
+    }
+
+
+    /**
+     * @dev closes last voting in list
+     * @return success
+     */
+    function submitVoting() 
+        public
+        returns (bool)
+    {
+        uint votingId = ballots.list.length - 1;
+        uint questionId = ballots.list[votingId].questionId;
+
+        bytes storage formula = questions.list[questionId].formula;
+        address owners = groups.list[0].groupAddress;
+
+        VM.Vote result = Ballots.closeVoting(votingId, formula, owners);
+        QuestionType.Question memory question = Questions.getQuestion(questionId);
+
+        MetaData memory meta = MetaData({
+            ballotId: votingId,
+            questionId: questionId,
+            startBlock: ballots.list[votingId].startBlock,
+            endBlock: block.number,
+            result: result
+        });
+
+        makeCall(
+            question.target, 
+            question.methodSelector, 
+            ballots.list[votingId].votingData,
+            meta
+        );
+
+        return true;
     }
 
     /**
@@ -86,73 +137,81 @@ contract ZeroOne is Notifier, IZeroOne {
     }
 
 
-    function setVote(address tokenAddr, address user, BallotResult descision) public returns (BallotResult) {
-        IERC20 token = IERC20(tokenAddr);
-        uint256 tokenBalance = token.balanceOf(user);
-        require(token.transferFrom(user, address(this), tokenBalance));
-        ballot.votes[tokenAddr][user] = descision;
-        ballot.votesWeight[tokenAddr][user] = tokenBalance;
-    }
-
-    function updateUserVote(address tokenAddr, address user, uint256 newVoteWeight) public override returns(bool){
-        uint256 oldVoteWeight = ballot.votesWeight[tokenAddr][user];
-        uint index = uint(ballot.votes[tokenAddr][user]);
-        uint256 oldDescisionWeight = ballot.descisionWeights[tokenAddr][index];
-
-        if (ballot.status == BallotStatus.ACTIVE) {
-            ballot.votesWeight[tokenAddr][user] = newVoteWeight;
-            ballot.descisionWeights[tokenAddr][index] = oldDescisionWeight - oldVoteWeight + newVoteWeight;
-            if (newVoteWeight == 0) {
-                ballot.votes[tokenAddr][user] = BallotResult.NOT_ACCEPTED;
-            }
-        }
-    }
-
-    function getUserVote(address tokenAddr, address user) 
-        public 
-        view
-        override
-        returns(uint)
-    {
-        return uint(ballot.votes[tokenAddr][user]);
-    }
-
-    function getUserVoteWeight(address tokenAddr, address user) 
-        public 
-        view
-        override
-        returns(uint256)
-    {
-       return ballot.votesWeight[tokenAddr][user];
-    }
-
-    function didUserVote(address tokenAddr, address user)
-        public 
-        override 
-        returns(bool)
-    {
-        return ballot.votes[tokenAddr][user] != BallotResult.NOT_ACCEPTED;
-    }
-
-    function submitVoting()
-        public
-        override
-    {
-        require(block.timestamp > ballot.endTime, "Time is not over");
-        ballot.status = BallotStatus.CLOSED;
-    }
-
-    function setGroupAdmin(
-        address tokenAddr, 
-        address newOwner
+    /**
+     * @dev wrapper for QuestionsWithGroups.addQuestionGroup method
+     * @param _metaData IZeroOne.MetaData
+     * @param _questionGroup QuestionGroup, which will be added
+     */
+    function addQuestionGroup(
+        MetaData memory _metaData,
+        GroupType.Group memory _questionGroup
     )
         public
-        override 
+        onlySelf()
+        returns (uint ballotId)
     {
-        tokenAddr.call(abi.encodeWithSignature("transferOwnership(address)", newOwner));
+        QuestionsWithGroups.addQuestionGroup(_questionGroup);
+        emit ZeroOneCall(_metaData);
+        return _metaData.ballotId;
     }
 
-    function disableUserGroup(address tokenAddr) public {
+    /**
+     * @dev wrapper for Questions.addQuestion method
+     * @param _metaData IZeroOne.MetaData
+     * @param _question Question, which will be added
+     */
+    function addQuestion(
+        MetaData memory _metaData,
+        QuestionType.Question memory _question
+    )
+        public
+        onlySelf()
+        returns (uint ballotId)
+    {
+        Questions.addQuestion(_question);
+        emit ZeroOneCall(_metaData);
+        return _metaData.ballotId;
+    }
+
+    /**
+     * @dev wrapper for UserGroups.addUserGroup method
+     * @param _metaData IZeroOne.MetaData
+     * @param _group UserGroup, which will be added
+     */
+    function addUserGroup(
+        MetaData memory _metaData,
+        UserGroup.Group memory _group
+    )
+        public
+        onlySelf()
+        returns (uint ballotId)
+    {
+        UserGroups.addUserGroup(_group);
+        emit ZeroOneCall(_metaData);
+        return _metaData.ballotId;
+    }
+
+    /**
+     * @dev wrapper for setAdmin method
+     * @param _metaData IZeroOne.MetaData
+     * @param _group address of group, which admin will be changed
+     * @param _user address of user, which will be new admin
+     */
+    function setGroupAdmin(
+        MetaData memory _metaData,
+        address _group,
+        address _user
+    )
+        internal
+        onlySelf()
+        returns(uint ballotId)
+    {
+        _group.call(abi.encodeWithSignature("transferOwnership(address)", _user));
+        emit ZeroOneCall(_metaData);
+        return _metaData.ballotId;
+    }
+
+    function disableUserGroup(address tokenAddr) internal {
         tokenAddr.call(abi.encodeWithSignature("removeFromProjects(address)", address(this)));
 
     }

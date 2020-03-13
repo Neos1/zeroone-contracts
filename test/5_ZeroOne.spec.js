@@ -29,8 +29,9 @@ contract('ZeroOne', (accounts) => {
             return prev;
         }, {});
 
+
     beforeEach(async () => {
-        zeroOne = await ZeroOne.new({ from: deployFrom });
+        zeroOne = await ZeroOne.new(token.address, { from: deployFrom });
         controlled = await Controlled.new(zeroOne.address, { from: deployFrom });
     });
 

@@ -1,6 +1,6 @@
 pragma solidity 0.6.1;
 
-import "../IERC20.sol";
+import "../../../__vendor__/IERC20.sol";
 
 /**
  * @title Group

@@ -1,6 +1,6 @@
 const UserGroupMock = artifacts.require('./UserGroupMock.sol');
 const TokenMock = artifacts.require('./TokenMock.sol');
-const ERC20Mock = artifacts.require('./ERC20.sol');
+const ERC20Mock = artifacts.require('./ERC20Mock.sol');
 
 const { getShortErrorMessage } = require('./helpers/get-error-message');
 

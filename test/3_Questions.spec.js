@@ -1,6 +1,8 @@
 const Questions = artifacts.require('./Questions.sol');
 
 const { getErrorMessage } = require('./helpers/get-error-message');
+const { compile, compileDescriptors } = require('zeroone-translator');
+const {questions} = require('./helpers/questions');
 
 contract('Questions', (accounts) => {
     let questions;
