@@ -21,7 +21,13 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         MetaData _meta
     );
 
-    constructor(UserGroup.Group memory _group) public {
+    constructor(address owners) public {
+        UserGroup.Group memory _group = UserGroup.Group({
+            name: "Owners",
+            groupAddress: owners,
+            groupType: UserGroup.Type.ERC20
+        });
+        
         addUserGroup(_group);
     }
 
