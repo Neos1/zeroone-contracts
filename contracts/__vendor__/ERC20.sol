@@ -72,6 +72,20 @@ contract ERC20 is Context {
     function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
+    
+    /**
+     * @dev returns {_symbol} of token
+     */
+    function symbol() public view returns(string memory) {
+        return _symbol;
+    }
+
+    /**
+     * @dev returns {_name} of token
+     */
+    function name() public view returns(string memory) {
+        return _name;
+    }
 
     /**
      * @dev See {IERC20-balanceOf}.

@@ -1,13 +1,13 @@
 pragma solidity 0.6.1;
 pragma experimental ABIEncoderV2;
 
-import "./IZeroOne.sol";
 import "./Questions/QuestionsWithGroups.sol";
 import "./UserGroups/UserGroups.sol";
 import "./Ballots/Ballots.sol";
 import "./Notifier/Notifier.sol";
 import "../lib/Meta.sol";
 import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
+import "./IZeroOne.sol";
 
 
 /**
