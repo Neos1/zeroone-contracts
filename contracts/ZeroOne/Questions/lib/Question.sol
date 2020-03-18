@@ -15,7 +15,7 @@ pragma solidity 0.6.1;
  * @dev Question data type implementation
  */
 library QuestionType {
-    uint private constant MIN_LENGTH = 10 minutes;
+    uint private constant MIN_LENGTH = 4 minutes;
     uint private constant MAX_LENGTH = 1 weeks;
  
     struct Question {
