@@ -59,7 +59,7 @@ contract UserGroups {
         view
         returns (uint length)
     {
-        return groups.list.length;
+        return groups.list.length - 1;
     }
 
     /**

@@ -118,6 +118,56 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
     }
 
     /**
+     * @dev finds group by given address
+     * @param _groupAddress address of group
+     * @return group
+     */
+    function findGroupByAddress(address _groupAddress)
+        internal
+        view
+        returns (UserGroup.Group group)
+    {
+        uint length = getUserGroupsAmount();
+        for (uint i = 0; i <= length; i++) {
+            if (groups[i].groupAddress == _groupAddress) {
+                group = groups[i];
+                break;
+            }
+        }
+        return group;
+    }
+
+    /**
+     * @dev revokes tokens and updates vote 
+     */
+    function revoke() 
+        public
+        returns (bool)
+    {
+        uint votingId = ballots.list.length - 1;
+        for (uint i = 0; i < 16; i++) {
+            DescriptorVM.Group storage group = ballots.descriptors[votingId].groups[i];
+            DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
+
+            if (group.groupAddress != address(0)) {
+                if(didUseVote(group.groupAddress, msg.sender)) {
+                    UserGroup.Group userGroup = findGroupByAddress(group.groupAddress);
+                    IERC20 token = IERC20(userGroup.groupAddress);
+
+                    if (userGroup.groupType == UserGroup.Type.ERC20) {
+                        uint tokenCount = getUserVoteWeight(votingId, userGroup.groupAddress, msg.sender);
+                        token.transferFrom(address(this), msg.sender, tokenCount);
+                        ballots.list[votingId].updateUserVote(userGroup.groupAddress, msg.sender, 0);
+                    } else if (userGroup.groupType == UserGroup.Type.ERC20) {
+                        token.revoke(address(this));
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * @notice makes call to contract external method
      * with modified data (meta added)
      * @param _target contract address to make call to
