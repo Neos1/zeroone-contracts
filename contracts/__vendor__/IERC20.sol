@@ -69,6 +69,15 @@ interface IERC20 {
     function owner() external view returns (address);
 
     /**
+     * @dev This is function for Custom tokens contracts,
+     * using for revoking tokens from {project}
+     *
+     * Returns status
+     */
+    function revoke(address project) external view returns (bool);
+
+
+    /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
      * another (`to`).
      *

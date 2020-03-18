@@ -27,7 +27,7 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
             groupAddress: owners,
             groupType: UserGroup.Type.ERC20
         });
-        
+
         addUserGroup(_group);
     }
 
@@ -125,12 +125,12 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
     function findGroupByAddress(address _groupAddress)
         internal
         view
-        returns (UserGroup.Group group)
+        returns (UserGroup.Group memory group)
     {
         uint length = getUserGroupsAmount();
         for (uint i = 0; i <= length; i++) {
-            if (groups[i].groupAddress == _groupAddress) {
-                group = groups[i];
+            if (groups.list[i].groupAddress == _groupAddress) {
+                group = groups.list[i];
                 break;
             }
         }
@@ -150,8 +150,8 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
             DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
 
             if (group.groupAddress != address(0)) {
-                if(didUseVote(group.groupAddress, msg.sender)) {
-                    UserGroup.Group userGroup = findGroupByAddress(group.groupAddress);
+                if(didUserVote(group.groupAddress, msg.sender)) {
+                    UserGroup.Group memory userGroup = findGroupByAddress(group.groupAddress);
                     IERC20 token = IERC20(userGroup.groupAddress);
 
                     if (userGroup.groupType == UserGroup.Type.ERC20) {

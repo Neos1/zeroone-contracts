@@ -87,6 +87,11 @@ contract CustomToken is Ownable {
      */
     function symbol() public view returns(string memory) { return _symbol; }
 
+    /**
+     * @dev returns list of holders
+     * @return holders 
+     */
+    function getHolders() public view returns (address[] memory) { return holders; } 
 
     /**
      * @dev gets balance of tokens for {_user}
