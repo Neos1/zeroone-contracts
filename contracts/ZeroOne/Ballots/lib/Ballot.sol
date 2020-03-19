@@ -25,6 +25,7 @@ library BallotType {
         mapping(address => mapping(address => VM.Vote)) votes;
         mapping(address => mapping(address => uint256)) votesWeight;
         mapping(address => mapping(uint => uint256)) descisionWeights;
+        mapping(address => mapping(address => uint256)) tokenReturns;
     }
 
     /**
@@ -90,6 +91,7 @@ library BallotType {
 
         _self.votes[_group][_user] = _descision;
         _self.votesWeight[_group][_user] = voteWeight;
+        _self.tokenReturns[_group][_user] = 0;
         _self.descisionWeights[_group][uint(_descision)] = _self.descisionWeights[_group][uint(_descision)] + voteWeight;
         return true;
     }

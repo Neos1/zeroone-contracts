@@ -8,6 +8,7 @@ import "./Notifier/Notifier.sol";
 import "../lib/Meta.sol";
 import "zeroone-voting-vm/contracts/ZeroOneVM.sol";
 import "./IZeroOne.sol";
+import "../__vendor__/IERC20.sol";
 
 
 /**
@@ -122,7 +123,9 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
      * @param _groupAddress address of group
      * @return group
      */
-    function findGroupByAddress(address _groupAddress)
+    function findGroupByAddress(
+        address _groupAddress
+    )
         internal
         view
         returns (UserGroup.Group memory group)
@@ -138,30 +141,68 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
     }
 
     /**
+     * @dev finds last voting when {_user} from {_group} use his tokens for voting
+     * @param _group address of group
+     * @param _user address of user
+     * @return votingId
+     */
+    function findLastUserVoting(
+        address _group,
+        address _user
+    )
+        public
+        view
+        returns(uint votingId)
+    {
+        votingId = ballots.list.length - 1;
+        while (
+            ballots.list[votingId].votes[_group][_user] == VM.Vote.UNDEFINED 
+            && votingId >= 0
+        ) {
+            votingId--;
+        }
+    }
+
+    /**
+     * @dev finds if user return his tokens since last voting
+     * @param _group address of group
+     * @param _user address of user
+     * @return isReturn
+     */
+    function isUserReturnTokens(
+        address _group,
+        address _user
+    )
+        public
+        view
+        returns (bool isReturn)
+    {
+        uint votingId = findLastUserVoting(_group, _user);
+        uint256 returnedTokens = ballots.list[votingId].tokenReturns[_group][_user];
+        return (returnedTokens > 0);
+    }
+
+    /**
      * @dev revokes tokens and updates vote 
      */
     function revoke() 
         public
         returns (bool)
     {
-        uint votingId = ballots.list.length - 1;
-        for (uint i = 0; i < 16; i++) {
-            DescriptorVM.Group storage group = ballots.descriptors[votingId].groups[i];
-            DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
-
-            if (group.groupAddress != address(0)) {
-                if(didUserVote(group.groupAddress, msg.sender)) {
-                    UserGroup.Group memory userGroup = findGroupByAddress(group.groupAddress);
-                    IERC20 token = IERC20(userGroup.groupAddress);
-
-                    if (userGroup.groupType == UserGroup.Type.ERC20) {
-                        uint tokenCount = getUserVoteWeight(votingId, userGroup.groupAddress, msg.sender);
-                        token.transferFrom(address(this), msg.sender, tokenCount);
-                        ballots.list[votingId].updateUserVote(userGroup.groupAddress, msg.sender, 0);
-                    } else if (userGroup.groupType == UserGroup.Type.ERC20) {
-                        token.revoke(address(this));
-                    }
+        uint groupsAmount = getUserGroupsAmount();
+        for (uint i = 0; i < groupsAmount; i++) {
+            UserGroup.Group storage group = groups.list[i];
+            if ( !isUserReturnTokens(group.groupAddress, msg.sender) ) {
+                uint votingId = findLastUserVoting(group.groupAddress, msg.sender);
+                IERC20 token = IERC20(group.groupAddress);
+                uint tokenCount = getUserVoteWeight(votingId, group.groupAddress, msg.sender);
+                if (group.groupType == UserGroup.Type.ERC20) {
+                    token.transfer(msg.sender, tokenCount);
+                    ballots.list[votingId].updateUserVote(group.groupAddress, msg.sender, 0);
+                } else if (group.groupType == UserGroup.Type.ERC20) {
+                    token.revoke(address(this));
                 }
+                ballots.list[votingId].tokenReturns[group.groupAddress][msg.sender] = tokenCount;
             }
         }
         return true;

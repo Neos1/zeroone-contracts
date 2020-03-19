@@ -13,6 +13,7 @@ const { questions } = require('./helpers/questions');
 contract('ZeroOne', ([from, secondary, third]) => {
   let zeroOne;
   let token;
+  let customToken;
 
   const results = ["UNDEFINED", "ACCEPTED", "DECLINED"]
 
@@ -75,7 +76,7 @@ contract('ZeroOne', ([from, secondary, third]) => {
     const ballotType =  await BallotType.new();
     
     await ZeroOne.link("ZeroOneVM", zeroOneVm.address);
-    await ZeroOne.link("BallotType", ballotType.address);
+    // await ZeroOne.link("BallotType", ballotType.address);
 
 
     zeroOne = await ZeroOne.new(group, { from });
@@ -98,40 +99,102 @@ contract('ZeroOne', ([from, secondary, third]) => {
     return(await getDescision(zeroOne));
   }
 
+  describe('findLastUserVoting', () => {
+    it('should return last voting id', async () => {
+      token = await ERC20.new('test', 'tst', 1000);
+      customToken = await CustomToken.new('test', 'tst', 1000);
+      const zeroOneVm = await ZeroOneVM.new();
+      await ZeroOne.link("ZeroOneVM", zeroOneVm.address);
+      zeroOne = await ZeroOne.new(token.address);
+      let formula = "erc20{%s}->conditions{quorum>50%, positive>90% of quorum}"
+      await uploadQuestions(formula, zeroOne);
+      await startVoting(zeroOne, token);
+
+      await increase(web3, 320000);
+      await zeroOne.submitVoting();
+
+      await startVoting(zeroOne, token);
+
+      await zeroOne.setVote(1);
+      const lastVoting = await zeroOne.findLastUserVoting(token.address, from);
+      console.log(lastVoting.toNumber());
+    });
+  })
+
+  describe('isUserReturnTokens', ()=>{
+    it('should return false', async() => {
+      token = await ERC20.new('test', 'tst', 1000);
+      customToken = await CustomToken.new('test', 'tst', 1000);
+      const zeroOneVm = await ZeroOneVM.new();
+      await ZeroOne.link("ZeroOneVM", zeroOneVm.address);
+      zeroOne = await ZeroOne.new(token.address);
+      let formula = "erc20{%s}->conditions{quorum>50%, positive>90% of quorum}"
+      await uploadQuestions(formula, zeroOne);
+      await startVoting(zeroOne, token);
+      await zeroOne.setVote(1);
+
+      await increase(web3, 320000);
+      const isReturn = await zeroOne.isUserReturnTokens(token.address, from);
+      console.log(isReturn);
+    })
+
+    it('should return true', async() => {
+      token = await ERC20.new('test', 'tst', 1000);
+      customToken = await CustomToken.new('test', 'tst', 1000);
+      const zeroOneVm = await ZeroOneVM.new();
+      await ZeroOne.link("ZeroOneVM", zeroOneVm.address);
+      zeroOne = await ZeroOne.new(token.address);
+      let formula = "erc20{%s}->conditions{quorum>50%, positive>90% of quorum}"
+      await uploadQuestions(formula, zeroOne);
+      await startVoting(zeroOne, token);
+
+      await zeroOne.setVote(1);
+      const userBalance = await token.balanceOf(from);
+      const contractBalance = await token.balanceOf(zeroOne.address);
+
+      console.log(userBalance.toNumber(), contractBalance.toNumber());
+      await token.transferFrom(zeroOne.address, from, contractBalance.toNumber());
+      // await zeroOne.revoke();
+      await increase(web3, 320000);
+      const isReturn = await zeroOne.isUserReturnTokens(token.address, from);
+      console.log(isReturn);
+    })
+  })
+
   describe("erc20{%s}->conditions{quorum>50%, positive>90% of quorum}", () => {
     it('should be positive', async () => {
-      let formula = `erc20{%s}->conditions{quorum>50%, positive>90% of quorum}`;
-      let descision;
-      let data = {
-        "transfers": {
-          "before":[{
-            "from": "",
-            "to": "",
-            "amount": ""
-          }],
+      // let formula = `erc20{%s}->conditions{quorum>50%, positive>90% of quorum}`;
+      // let descision;
+      // let data = {
+      //   "transfers": {
+      //     "before":[{
+      //       "from": "",
+      //       "to": "",
+      //       "amount": ""
+      //     }],
           
-          "after": [{
-            "from": "",
-            "to": "",
-            "amount": ""
-          }]
-        },
+      //     "after": [{
+      //       "from": "",
+      //       "to": "",
+      //       "amount": ""
+      //     }]
+      //   },
       
-        "votes":[
-          {
-            "sender":"",
-            "vote":""
-          }
-        ],
-        "expected":""
-      }
-      
-      try {
-        descision = await Voter(formula);
-      } catch({ message }) {
-        console.log(message)
-      }
-      assert.strictEqual(descision, 1);  
+      //   "votes":[
+      //     {
+      //       "sender":"",
+      //       "vote":""
+      //     }
+      //   ],
+      //   "expected":""
+      // }
+
+      // try {
+      //   descision = await Voter(formula);
+      // } catch({ message }) {
+      //   console.log(message)
+      // }
+      // assert.strictEqual(descision, 1);  
     });
 
     it('should be negative', async () => {});
