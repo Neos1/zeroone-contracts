@@ -180,7 +180,7 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         view
         returns (bool)
     {
-        bool isNotReturn = true;
+        bool isNotReturn = false;
         if (getVotingsAmount() > 0) {
             uint votingId = findLastUserVoting(_group, _user);
             uint256 returnedTokens = ballots.list[votingId].tokenReturns[_group][_user];
