@@ -158,11 +158,12 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
             votingId = ballots.list.length - 1;
             while (
                 ballots.list[votingId].votes[_group][_user] == VM.Vote.UNDEFINED 
-                && votingId >= 0
+                && votingId > 0
             ) {
                 votingId--;
             }
-        }
+        } else votingId = 0;
+        return votingId;
     }
 
     /**
