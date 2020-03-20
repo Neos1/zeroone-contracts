@@ -179,7 +179,7 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
     {
         uint votingId = findLastUserVoting(_group, _user);
         uint256 returnedTokens = ballots.list[votingId].tokenReturns[_group][_user];
-        return (returnedTokens > 0);
+        return returnedTokens > 0;
     }
 
     /**
