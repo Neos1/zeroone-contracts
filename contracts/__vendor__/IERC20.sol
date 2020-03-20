@@ -74,7 +74,7 @@ interface IERC20 {
      *
      * Returns status
      */
-    function revoke(address project) external view returns (bool);
+    function revoke(address project, address user) external view returns (bool);
 
 
     /**

@@ -354,10 +354,12 @@ contract CustomToken is Ownable {
     /**
      * @dev unlocks the tokens of msg.sender
      * @param _project address of project
+     * @param _user address of user
      * @return isUnlocked
      */
     function revoke(
-        address _project
+        address _project,
+        address _user
     )
         public
         returns(bool isUnlocked)
@@ -365,7 +367,7 @@ contract CustomToken is Ownable {
         require(isProjectAddress(_project), "Address is not in project list");
         IBallots project = IBallots(_project);
         require(
-            project.didUserVote(address(this), msg.sender) == true,
+            isTokenLocked(_project, _user),
             "User not voted, nothing to unlock"
         );
         

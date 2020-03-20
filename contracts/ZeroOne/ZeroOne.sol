@@ -179,13 +179,13 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         view
         returns (bool)
     {
-        bool isReturn = true;
+        bool isNotReturn = true;
         if (getVotingsAmount() > 0) {
             uint votingId = findLastUserVoting(_group, _user);
             uint256 returnedTokens = ballots.list[votingId].tokenReturns[_group][_user];
-            isReturn = returnedTokens > 0;
+            isNotReturn = didUserVote(votingId, _group, _user) && returnedTokens == 0;
         }
-        return isReturn;
+        return !isNotReturn;
     }
 
     /**
@@ -206,7 +206,7 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
                     token.transfer(msg.sender, tokenCount);
                     ballots.list[votingId].updateUserVote(group.groupAddress, msg.sender, 0);
                 } else if (group.groupType == UserGroup.Type.ERC20) {
-                    token.revoke(address(this));
+                    token.revoke(address(this), msg.sender);
                 }
                 ballots.list[votingId].tokenReturns[group.groupAddress][msg.sender] = tokenCount;
             }

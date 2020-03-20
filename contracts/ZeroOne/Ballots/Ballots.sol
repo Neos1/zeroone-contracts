@@ -204,7 +204,7 @@ contract Ballots {
             
             if (group.groupAddress != address(0)) {
                 if (!isUserExcluded(group.exclude, msg.sender)) {
-                    if (!didUserVote(group.groupAddress, msg.sender)) {
+                    if (!didUserVote(votingId, group.groupAddress, msg.sender)) {
                         ballots.list[votingId].setVote(group.groupAddress, msg.sender, _descision);
                         setGroupVotes(group.groupAddress, votingId, i);
                     }
@@ -223,7 +223,7 @@ contract Ballots {
                 }
 
                 if(userAddress != address(0)){
-                    if (!didUserVote(user.groupAddress, user.userAddress)) {
+                    if (!didUserVote(votingId, user.groupAddress, user.userAddress)) {
                         ballots.list[votingId].setVote(groupAddress, userAddress, _descision);
                         user.vote = _descision;
                     } else {
@@ -258,7 +258,7 @@ contract Ballots {
             DescriptorVM.User storage user = ballots.descriptors[votingId].users[i];
             if (group.groupAddress != address(0) && group.groupAddress == _group) {
                 if (!isUserExcluded(group.exclude, _user)) {
-                    if (didUserVote(group.groupAddress, _user)) {   
+                    if (didUserVote(votingId, group.groupAddress, _user)) {   
                         ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
                         setGroupVotes(group.groupAddress, votingId, i);
                     }
@@ -271,7 +271,7 @@ contract Ballots {
                 }
 
                 if (user.userAddress != address(0)) {
-                    if (didUserVote(user.groupAddress, _user)) {
+                    if (didUserVote(votingId, user.groupAddress, _user)) {
                         ballots.list[votingId].updateUserVote(_group, _user, _newVoteWeight);
                         if (_newVoteWeight == 0) {
                             user.vote = VM.Vote.UNDEFINED;
@@ -372,11 +372,13 @@ contract Ballots {
 
     /**
      * @dev returns confirming that this {_user} from {_group} is voted
+     * @param _votingId id of voting
      * @param _group address of group
      * @param _user address of user
      * @return confirm
      */
     function didUserVote (
+        uint _votingId,
         address _group,
         address _user
     )
@@ -384,8 +386,7 @@ contract Ballots {
         view
         returns(bool confirm)
     {
-        uint votingId = ballots.list.length - 1;
-        confirm = ballots.list[votingId].votes[_group][_user] != VM.Vote.UNDEFINED;
+        confirm = ballots.list[_votingId].votes[_group][_user] != VM.Vote.UNDEFINED;
     }
 
     /**
