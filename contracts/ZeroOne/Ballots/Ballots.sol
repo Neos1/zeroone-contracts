@@ -96,7 +96,7 @@ contract Ballots {
         )
     {        
         require(ballots.list[votingId].endTime < block.timestamp, "Time is not over yet");
-
+        getVotingGroupsTotalSupply(votingId);
         ballots.descriptors[votingId].executeResult(formula, owners);
         ballots.list[votingId].close();
 
@@ -105,6 +105,19 @@ contract Ballots {
         return (
             ballots.descriptors[votingId].result
         );
+    }
+
+    function getVotingGroupsTotalSupply(
+        uint votingId
+    ) 
+        internal
+    {
+        for (uint i = 0; i < 16; i++) {
+            DescriptorVM.Group storage group = ballots.descriptors[votingId].groups[i];
+            if (group.groupAddress != address(0)) {
+                group.totalSupply = IERC20(group.groupAddress).totalSupply();
+            }
+        }
     }
 
     /**

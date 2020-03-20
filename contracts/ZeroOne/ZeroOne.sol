@@ -154,12 +154,14 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         view
         returns(uint votingId)
     {
-        votingId = ballots.list.length - 1;
-        while (
-            ballots.list[votingId].votes[_group][_user] == VM.Vote.UNDEFINED 
-            && votingId >= 0
-        ) {
-            votingId--;
+        if (getVotingsAmount() > 0) {
+            votingId = ballots.list.length - 1;
+            while (
+                ballots.list[votingId].votes[_group][_user] == VM.Vote.UNDEFINED 
+                && votingId >= 0
+            ) {
+                votingId--;
+            }
         }
     }
 
@@ -175,11 +177,15 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
     )
         public
         view
-        returns (bool isReturn)
+        returns (bool)
     {
-        uint votingId = findLastUserVoting(_group, _user);
-        uint256 returnedTokens = ballots.list[votingId].tokenReturns[_group][_user];
-        return returnedTokens > 0;
+        bool isReturn = true;
+        if (getVotingsAmount() > 0) {
+            uint votingId = findLastUserVoting(_group, _user);
+            uint256 returnedTokens = ballots.list[votingId].tokenReturns[_group][_user];
+            isReturn = returnedTokens > 0;
+        }
+        return isReturn;
     }
 
     /**
