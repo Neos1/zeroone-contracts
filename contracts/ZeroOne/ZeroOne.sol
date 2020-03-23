@@ -291,6 +291,11 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         returns (uint ballotId)
     {
         UserGroups.addUserGroup(_group);
+
+        if (_group.groupType == UserGroup.Type.CUSTOM) {
+            _group.groupAddress.call(abi.encodeWithSignature("addToProjects(address)", address(this)));
+        }
+        
         emit ZeroOneCall(_metaData);
         return _metaData.ballotId;
     }
