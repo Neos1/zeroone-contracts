@@ -306,7 +306,7 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         address _group,
         address _user
     )
-        internal
+        public
         onlySelf()
         returns(uint ballotId)
     {
