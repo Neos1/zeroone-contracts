@@ -74,6 +74,7 @@ contract UserGroups {
         returns (uint id)
     {
         id = groups.add(_group);
+        _group.groupAddress.call(abi.encodeWithSignature("addToProjects(address)", address(this)));
         emit UserGroupAdded(
         id,
         _group.name,
