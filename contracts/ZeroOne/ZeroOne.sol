@@ -206,7 +206,7 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
                 if (group.groupType == UserGroup.Type.ERC20) {
                     token.transfer(msg.sender, tokenCount);
                     ballots.list[votingId].updateUserVote(group.groupAddress, msg.sender, 0);
-                } else if (group.groupType == UserGroup.Type.ERC20) {
+                } else if (group.groupType == UserGroup.Type.CUSTOM) {
                     token.revoke(address(this), msg.sender);
                 }
                 ballots.list[votingId].tokenReturns[group.groupAddress][msg.sender] = tokenCount;
@@ -295,7 +295,7 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         if (_group.groupType == UserGroup.Type.CUSTOM) {
             _group.groupAddress.call(abi.encodeWithSignature("addToProjects(address)", address(this)));
         }
-        
+
         emit ZeroOneCall(_metaData);
         return _metaData.ballotId;
     }
