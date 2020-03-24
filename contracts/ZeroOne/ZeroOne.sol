@@ -203,12 +203,14 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
                 uint votingId = findLastUserVoting(group.groupAddress, msg.sender);
                 IERC20 token = IERC20(group.groupAddress);
                 uint tokenCount = getUserVoteWeight(votingId, group.groupAddress, msg.sender);
+
                 if (group.groupType == UserGroup.Type.ERC20) {
                     token.transfer(msg.sender, tokenCount);
-                    ballots.list[votingId].updateUserVote(group.groupAddress, msg.sender, 0);
                 } else if (group.groupType == UserGroup.Type.CUSTOM) {
-                    token.revoke(address(this), msg.sender);
+                    token.revoke(msg.sender);
                 }
+
+                ballots.list[votingId].updateUserVote(group.groupAddress, msg.sender, 0);
                 ballots.list[votingId].tokenReturns[group.groupAddress][msg.sender] = tokenCount;
             }
         }
@@ -233,11 +235,13 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         internal
         returns (bool result)
     {
-        return notify(
-            _target,
-            _method,
-            _data.addMetaData(abi.encode(_metaData))
-        );
+        if (_metaData.result == VM.Vote.ACCEPTED) {
+            return notify(
+                _target,
+                _method,
+                _data.addMetaData(abi.encode(_metaData))
+            );
+        }
     }
 
 
@@ -253,8 +257,10 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         public
         onlySelf()
         returns (uint ballotId)
-    {
-        QuestionsWithGroups.addQuestionGroup(_questionGroup);
+    {   
+        if (_metaData.result == VM.Vote.ACCEPTED) {
+            QuestionsWithGroups.addQuestionGroup(_questionGroup);
+        }
         emit ZeroOneCall(_metaData);
         return _metaData.ballotId;
     }
@@ -272,7 +278,9 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         onlySelf()
         returns (uint ballotId)
     {
-        Questions.addQuestion(_question);
+        if (_metaData.result == VM.Vote.ACCEPTED) {
+            Questions.addQuestion(_question);
+        }
         emit ZeroOneCall(_metaData);
         return _metaData.ballotId;
     }
@@ -290,10 +298,11 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         onlySelf()
         returns (uint ballotId)
     {
-        UserGroups.addUserGroup(_group);
-
-        if (_group.groupType == UserGroup.Type.CUSTOM) {
-            _group.groupAddress.call(abi.encodeWithSignature("addToProjects(address)", address(this)));
+        if (_metaData.result == VM.Vote.ACCEPTED) {
+            UserGroups.addUserGroup(_group);
+            if (_group.groupType == UserGroup.Type.CUSTOM) {
+                _group.groupAddress.call(abi.encodeWithSignature("addToProjects(address)", address(this)));
+            }
         }
 
         emit ZeroOneCall(_metaData);
@@ -315,7 +324,9 @@ contract ZeroOne is Notifier, IZeroOne, Ballots, UserGroups, QuestionsWithGroups
         onlySelf()
         returns(uint ballotId)
     {
-        _group.call(abi.encodeWithSignature("transferOwnership(address)", _user));
+        if (_metaData.result == VM.Vote.ACCEPTED) {
+            _group.call(abi.encodeWithSignature("transferOwnership(address)", _user));
+        }
         emit ZeroOneCall(_metaData);
         return _metaData.ballotId;
     }

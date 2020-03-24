@@ -271,7 +271,7 @@ contract CustomToken is Ownable {
         require(isProjectAddress(_project), "Provided address is not in project list");
         tokenLocks[_project][_user] = false;
         emit TokensUnlocked(_project, _user);
-        return !tokenLocks[_project][_user];
+        return !isTokenLocked(_project, _user);
     }
 
     /**
@@ -334,7 +334,7 @@ contract CustomToken is Ownable {
         returns (bool)
     {
         require(
-            (msg.sender == owner() || isProjectAddress(msg.sender)), 
+            (msg.sender == owner() || isProjectAddress(msg.sender) || msg.sender == address(this)), 
             "This operation is not allowed for this address"
         );
         require(_sender != address(0), "Address must be non-empty");
@@ -349,30 +349,26 @@ contract CustomToken is Ownable {
         }
         return true;
     }
-
+    
     /**
      * @dev unlocks the tokens of msg.sender
-     * @param _project address of project
      * @param _user address of user
      * @return isUnlocked
      */
     function revoke(
-        address _project,
         address _user
     )
         public
         returns(bool isUnlocked)
     {
-        require(isProjectAddress(_project), "Address is not in project list");
-        IBallots project = IBallots(_project);
+        require(isProjectAddress(msg.sender), "Address is not in project list");
         require(
-            isTokenLocked(_project, _user),
+            isTokenLocked(msg.sender, _user),
             "User not voted, nothing to unlock"
         );
-        
-        project.updateUserVote(address(this), msg.sender, 0);
-        unlockTokens(_project, msg.sender);
-        return !isTokenLocked(_project, msg.sender);
+
+        unlockTokens(msg.sender, _user);
+        return true;
     }
 
     /**
